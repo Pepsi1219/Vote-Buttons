@@ -1,15 +1,15 @@
-/* ============================================================
-   VOTE BUTTONS — styles.css
-   Mobile-first | Dark Navy Theme | Thai/EN Bilingual
-   ============================================================ */
-
-/* ---------- CSS Variables ---------- */
 :root {
   --clr-bg:        #0a0f1e;
   --clr-surface:   #111827;
   --clr-surface2:  #1e293b;
   --clr-border:    #1e3a5f;
-  --clr-pass:     
+  --clr-pass:      #10b981;
+  --clr-pass-dark: #059669;
+  --clr-pass-glow: rgba(16,185,129,0.35);
+  --clr-fail:      #ef4444;
+  --clr-fail-dark: #dc2626;
+  --clr-fail-glow: rgba(239,68,68,0.35);
+  --clr-accent:    #3b82f6;
   --clr-text:      #f1f5f9;
   --clr-text-dim:  #94a3b8;
   --clr-text-muted:#475569;
