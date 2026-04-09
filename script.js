@@ -555,54 +555,61 @@ async function checkAllVoted(voteData, judgeCount, ri, ti) {
 
 /* CAST VOTE — กรรมการกดปุ่ม */
 async function castVote(choice) {
-  // 1. Check: ต้องเลือกชื่อแล้ว และแอดมินต้องเปิดรอบการประเมินอยู่ (isActive)
   if (!currentJudge || !sessionData?.isActive) return;
-
-  // 2. Check: ถ้าเคยโหวตในทีมนี้ไปแล้ว ห้ามกดซ้ำ
   if (myVoteForCurrentSlot) {
     showToast(t('alreadyVoted'), 'info');
     return;
   }
 
-  // 3. Feedback: เล่นเสียงปุ่มกด (เรียกฟังก์ชันที่เราปรับปรุงใหม่)
-  if (typeof playVoteSound === 'function') {
-    playVoteSound();
-  }
+  if (typeof playVoteSound === 'function') playVoteSound();
 
   const { currentRoundIndex: ri, currentTeamIndex: ti } = sessionData;
   const slotKey = `${ri}_${ti}`;
   const teamName = settings.teams?.[ti] || '—';
 
   try {
-    // 4. บันทึกลง Firestore: ใช้ [index] เป็น key เพื่อแยกคะแนนกรรมการแต่ละคน
-    // { merge: true } สำคัญมาก เพื่อไม่ให้ทับคะแนนของกรรมการท่านอื่นในทีมเดียวกัน
+    // 4. บันทึกคะแนน (เหมือนเดิม)
     await db.collection('votes').doc(slotKey).set({
       [currentJudge.index]: choice
     }, { merge: true });
 
-    // 5. อัปเดต State ภายในเครื่อง
     myVoteForCurrentSlot = choice;
-
-    // 6. แสดง Toast แจ้งเตือน (เช่น "คุณประเมิน ทีม A ผ่าน")
     const msg = choice === 'pass' ? t('youVotedPass', teamName) : t('youVotedFail', teamName);
     showToast(msg, choice);
-    
-    // 7. UI Animation: ทำให้ปุ่มดูเหมือนถูกกดจริง
-    const btnId = choice === 'pass' ? 'btn-pass' : 'btn-fail';
-    const btn = document.getElementById(btnId);
-    if (btn) {
-      btn.classList.add('pressed');
-      setTimeout(() => btn.classList.remove('pressed'), 400);
+
+    // --- ส่วนที่ต้องเพิ่ม: เช็คว่าครบหรือยัง? ---
+
+    // 1. ดึงข้อมูลที่เพิ่งอัปเดตไปมาดูจำนวน Field (คนโหวต)
+    const voteDoc = await db.collection('votes').doc(slotKey).get();
+    const voteData = voteDoc.data() || {};
+    const totalVotesNow = Object.keys(voteData).length; // นับว่ามีกี่คนโหวตแล้ว
+    const requiredVotes = settings.judges.length;      // จำนวนกรรมการทั้งหมดที่มีใน Settings
+
+    console.log(`Current: ${totalVotesNow} / Required: ${requiredVotes}`);
+
+    // 2. ถ้ายังไม่ครบ ไม่ต้องทำอะไร (แค่โชว์สถานะว่ารอเพื่อน)
+    if (totalVotesNow < requiredVotes) {
+      console.log("Waiting for other judges...");
+      if (typeof updateJudgeScreen === 'function') updateJudgeScreen();
+      return; 
     }
 
-    // 8. สั่งให้หน้าจออัปเดต UI (เพื่อแสดง Overlay "รอกรรมการท่านอื่น")
-    if (typeof updateJudgeScreen === 'function') {
-      updateJudgeScreen();
-    }
+    // 3. ถ้าครบแล้ว! (เฉพาะคนสุดท้ายที่กดจะมาถึงตรงนี้) 
+    // ให้บันทึกสถานะว่ารอบนี้ "เสร็จสมบูรณ์" ลงใน completedSessions
+    await db.collection('completedSessions').doc(slotKey).set({
+      roundIndex: ri,
+      teamIndex: ti,
+      totalVotes: totalVotesNow,
+      completedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 4. 🔥 สั่งข้ามไปทีมถัดไป (เฉพาะเมื่อโหวตครบเท่านั้น)
+    // ตรงนี้อาจจะเป็นฟังก์ชัน nextStep() หรือให้ Admin เป็นคนกดก็ได้ครับ
+    console.log("All judges voted! Round complete.");
 
   } catch (error) {
     console.error("❌ Cast Vote Error:", error);
-    showToast("Error saving vote. Please check your connection.", "fail");
+    showToast("Error saving vote.", "fail");
   }
 }
 
