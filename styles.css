@@ -120,7 +120,7 @@ input  { font-family: var(--font-main); }
   max-width: 420px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 15px;
 }
 
 .setup-logo {
@@ -173,9 +173,10 @@ input  { font-family: var(--font-main); }
 }
 
 .judge-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  max-height: 350px;    /* 📏 ความสูงสูงสุดที่ยอมให้แสดง (ปรับตามความเหมาะสมของหน้าจอ) */
+  overflow-y: auto;      /* 📜 ถ้าชื่อเยอะเกิน ให้เกิดแถบ Scroll เฉพาะในกรอบนี้ */
+  padding: 10px;
+  margin: 15px 0;
 }
 
 .judge-card {
@@ -983,3 +984,56 @@ input  { font-family: var(--font-main); }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--clr-border); border-radius: 2px; }
+
+/* ปุ่มเปลี่ยนภาษาไปอยู่ขวาบน */
+#btn-lang {
+  position: fixed;    /* ทำให้ลอยคงที่ ไม่เลื่อนตามการ Scroll */
+  top: 20px;          /* ห่างจากขอบบน 20px */
+  right: 20px;        /* ห่างจากขอบขวา 20px */
+  z-index: 9999;      /* อยู่ชั้นบนสุดเสมอ ไม่โดนอย่างอื่นบัง */
+  
+  /* ตกแต่งเพิ่มเติมให้สวยงามแบบตั๋วหนัง/Modern */
+  background: rgba(255, 255, 255, 0.2); 
+  backdrop-filter: blur(5px); /* พื้นหลังเบลอนิดๆ ดูพรีเมียม */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+#btn-lang:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05); /* ขยายใหญ่นิดนึงตอนเอาเมาส์วาง */
+}
+
+
+/* ปุ่มตั้งค่ามาอยู่ซ้ายล่าง */
+#btn-settings-setup {
+  position: fixed;    /* ลอยคงที่ */
+  bottom: 20px;       /* ห่างจากขอบล่าง 20px */
+  left: 20px;         /* ห่างจากขอบซ้าย 20px */
+  z-index: 9999;      /* อยู่ชั้นบนสุด */
+
+  /* ตกแต่งให้ดูเป็นปุ่มลับๆ หรือปุ่มตั้งค่า */
+  background: rgba(0, 0, 0, 0.3); /* มืดนิดๆ จะได้ไม่กวนสายตา */
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 45px;        /* ทำเป็นทรงกลมหรือจัตุรัสให้กดง่าย */
+  height: 45px;
+  border-radius: 50%; /* วงกลมพรีเมียม */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#btn-settings-setup:hover {
+  background: rgba(0, 0, 0, 0.6);
+  transform: rotate(45deg); /* เพิ่มลูกเล่นให้เฟืองหมุนตอนเอาเมาส์วาง */
+}
