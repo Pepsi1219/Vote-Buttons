@@ -211,7 +211,7 @@ function toggleLanguage() {
   // อัพเดต dynamic content ที่ render แล้ว
   if (sessionData) updateJudgeScreen();
   if (sessionData && settings) updateStatusBanner();
-  showToast(currentLang === 'th' ? '🇹🇭 ภาษาไทย' : '🇬🇧 English', 'info');
+  showToast(currentLang === 'th' ? 'ภาษาไทย' : 'English', 'info');
 }
 
 /* FIREBASE & INITIALIZATION */
