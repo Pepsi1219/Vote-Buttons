@@ -901,51 +901,60 @@ async function saveSettings() {
   const judges = getInputValues('judges-inputs');
   const teams  = getInputValues('teams-inputs');
   const rounds = getInputValues('rounds-inputs');
+
   if (!judges.length || !teams.length || !rounds.length) {
-    showToast('⚠️ กรุณากรอกข้อมูลให้ครบอย่างน้อย 1 รายการในทุกหมวด', 'info');
+    showToast('⚠️ กรุณากรอกข้อมูลให้ครบทุกหมวด', 'info');
     return;
   }
 
   try {
+    // ใช้ .set เพื่อให้สร้างไฟล์ใหม่ได้เสมอถ้ายังไม่มี
     await db.collection('config').doc('settings').set({ 
       judges, 
       teams, 
       rounds,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp() // เก็บเวลาที่แก้ไขล่าสุด
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    
+    // พยายามดึงค่าใหม่เข้าตัวแปร local ทันทีหลังบันทึก
+    settings = { judges, teams, rounds }; 
+    
     showToast(t('settingsSaved'), 'info');
+    console.log("✅ Settings saved successfully");
   } catch (error) {
     console.error("❌ Save Settings Error:", error);
-    showToast("ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่", "fail");
+    showToast("ไม่สามารถบันทึกได้: " + error.message, "fail");
   }
 }
 
 async function activateRound() {
-  // 1. ตรวจสอบความพร้อมของข้อมูล
-  if (!settings || !sessionData) {
-    showToast("⚠️ ข้อมูลระบบไม่พร้อม", "fail");
+  console.log("Checking activation requirements...");
+
+  // 1. เช็คแค่ฐานข้อมูล ถ้ามี db คือไปต่อได้
+  if (!db) {
+    showToast("❌ เชื่อมต่อฐานข้อมูลไม่ได้", "fail");
     return;
   }
 
-  // 2. ถ้าสถานะคือจบการแข่งขันไปแล้ว (isCompleted) ห้ามกด Activate
-  if (sessionData.isCompleted) {
-    showToast("⚠️ การประเมินจบลงแล้ว กรุณา Reset ก่อนเริ่มใหม่", "info");
+  // 2. เช็คกรณีจบการแข่งขัน (ใช้ Optional Chaining ?. ป้องกัน Error)
+  if (sessionData?.isCompleted) {
+    showToast("⚠️ จบการประเมินแล้ว กรุณา Reset ก่อน", "info");
     return;
   }
 
   try {
-    // 3. อัปเดตสถานะ isActive เป็น true ใน Firestore
-    await db.collection('config').doc('session').update({ 
+    // 3. ใช้ .set แบบ merge เพื่อป้องกัน Error กรณีไม่มีเอกสาร session อยู่ก่อน
+    await db.collection('config').doc('session').set({ 
       isActive: true,
-      activatedAt: firebase.firestore.FieldValue.serverTimestamp() // เก็บเวลาที่กดเริ่ม
-    });
+      activatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
 
-    // 4. แสดง Toast แจ้งเตือนแอดมิน
     showToast(t('activated'), 'info');
+    console.log("🚀 Round Activated!");
 
   } catch (error) {
     console.error("❌ Activate Round Error:", error);
-    showToast("ไม่สามารถเปิดรอบได้ กรุณาลองใหม่", "fail");
+    showToast("ไม่สามารถเปิดรอบได้: " + error.message, "fail");
   }
 }
 
@@ -983,14 +992,10 @@ function updateAdminStatus() {
 
 /* RESET ALL  */
 async function resetAll() {
-  // 1. ถามเพื่อความชัวร์
-  if (!confirm(t('resetConfirm'))) return;
+  if (!confirm("คุณต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?")) return;
   
   try {
-    // 2. ล้างค่าโหวตในเครื่องตัวเองก่อน
-    myVoteForCurrentSlot = null;
-
-    // 3. รีเซ็ตสถานะ Session ใน Firestore ให้กลับไปเริ่มที่ 0
+    // 1. รีเซ็ตสถานะ Session ใน config/session
     await db.collection('config').doc('session').set({
       currentRoundIndex: 0,
       currentTeamIndex: 0,
@@ -999,28 +1004,26 @@ async function resetAll() {
       resetAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // 4. 🔥 ล้างคะแนนโหวตทั้งหมดในฐานข้อมูล (Batch Delete)
-    // เพื่อไม่ให้คะแนนเก่าโผล่มาตอนเริ่มรอบ 1 ใหม่
-    const votesSnapshot = await db.collection('votes').get();
-    if (!votesSnapshot.empty) {
+    // 2. 🔥 แก้จุดนี้: เปลี่ยนจาก 'votes' เป็น 'completedSessions'
+    const snapshot = await db.collection('completedSessions').get();
+    
+    if (!snapshot.empty) {
       const batch = db.batch();
-      votesSnapshot.docs.forEach((doc) => {
+      snapshot.docs.forEach((doc) => {
         batch.delete(doc.ref);
       });
       await batch.commit();
-      console.log("🧹 ข้อมูลการโหวตทั้งหมดถูกล้างเรียบร้อย");
+      console.log(`🧹 ลบข้อมูลใน completedSessions แล้ว ${snapshot.size} รายการ`);
     }
 
-    showToast(t('resetDone'), 'info');
+    showToast("🧹 รีเซ็ตระบบและล้างผลคะแนนเรียบร้อยแล้ว", "info");
 
-    // 5. อัปเดตหน้าจอแอดมินให้เป็นสถานะล่าสุด
-    if (typeof updateAdminStatus === 'function') {
-      updateAdminStatus();
-    }
+    // 3. สั่งให้หน้าจออัปเดต (เพื่อให้ UI กลับเป็น 0 ทันที)
+    if (typeof handleSessionChange === 'function') handleSessionChange();
 
   } catch (error) {
     console.error("❌ Reset Error:", error);
-    showToast("เกิดข้อผิดพลาดในการรีเซ็ต", "fail");
+    showToast("รีเซ็ตไม่สำเร็จ: " + error.message, "fail");
   }
 }
 
@@ -1453,3 +1456,31 @@ function renderDemoMode() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+/* ============================================================
+    🏠 GO HOME - ย้อนกลับไปหน้าเลือกกรรมการ
+   ============================================================ */
+function goHome() {
+  // ถามเพื่อความแน่ใจก่อนออกจากหน้าตัดสิน
+  const confirmMsg = currentLang === 'th' ? 
+    "คุณต้องการออกจากหน้านี้เพื่อเลือกชื่อกรรมการใหม่ใช่หรือไม่?" : 
+    "Are you sure you want to go back to the setup screen?";
+
+  if (confirm(confirmMsg)) {
+    // 1. ล้าง session ในหน่วยความจำ (ถ้ามี)
+    currentJudge = null;
+    localStorage.removeItem('voter_session'); 
+
+    // 2. เปลี่ยนหน้ากลับไปหน้าแรก
+    showScreen('screen-setup');
+    
+    // 3. แจ้งเตือนเล็กน้อย
+    showToast(currentLang === 'th' ? "กลับสู่หน้าหลัก" : "Back to Home", "info");
+    
+    // 4. สั่งให้วาดรายชื่อกรรมการรอไว้เลย
+    if (typeof renderJudgeList === 'function') renderJudgeList();
+  }
+}
+
+// 🔥 สำคัญ: ต้องเพิ่มบรรทัดนี้ไว้ท้ายไฟล์เพื่อให้ HTML รู้จักฟังก์ชัน
+window.goHome = goHome;
