@@ -555,6 +555,7 @@ async function checkAllVoted(voteData, judgeCount, ri, ti) {
 
 /* CAST VOTE — กรรมการกดปุ่ม */
 async function castVote(choice) {
+  // 1. Check เบื้องต้น
   if (!currentJudge || !sessionData?.isActive) return;
   if (myVoteForCurrentSlot) {
     showToast(t('alreadyVoted'), 'info');
@@ -568,34 +569,37 @@ async function castVote(choice) {
   const teamName = settings.teams?.[ti] || '—';
 
   try {
-    // 4. บันทึกคะแนน (เหมือนเดิม)
-    await db.collection('votes').doc(slotKey).set({
+    // 2. บันทึกคะแนนลง Firestore (ใช้ merge เพื่อรวมคะแนนกรรมการทุกคน)
+    const voteRef = db.collection('votes').doc(slotKey);
+    await voteRef.set({
       [currentJudge.index]: choice
     }, { merge: true });
 
+    // อัปเดตสถานะในเครื่อง
     myVoteForCurrentSlot = choice;
     const msg = choice === 'pass' ? t('youVotedPass', teamName) : t('youVotedFail', teamName);
     showToast(msg, choice);
 
-    // --- ส่วนที่ต้องเพิ่ม: เช็คว่าครบหรือยัง? ---
-
-    // 1. ดึงข้อมูลที่เพิ่งอัปเดตไปมาดูจำนวน Field (คนโหวต)
-    const voteDoc = await db.collection('votes').doc(slotKey).get();
+    // 3. ดึงข้อมูลล่าสุดจาก DB มาเช็ค (ต้องดึงใหม่หลังจาก set เพื่อความแม่นยำ)
+    const voteDoc = await voteRef.get();
     const voteData = voteDoc.data() || {};
-    const totalVotesNow = Object.keys(voteData).length; // นับว่ามีกี่คนโหวตแล้ว
-    const requiredVotes = settings.judges.length;      // จำนวนกรรมการทั้งหมดที่มีใน Settings
+    
+    // กรองเฉพาะ Field ที่เป็นตัวเลข (index ของกรรมการ) เพื่อไม่ให้เอาพวก Field อื่นมาปน
+    const totalVotesNow = Object.keys(voteData).filter(key => !isNaN(key)).length; 
+    const requiredVotes = settings.judges ? settings.judges.length : 0;
 
-    console.log(`Current: ${totalVotesNow} / Required: ${requiredVotes}`);
+    console.log(`ตรวจสอบคะแนน: มาแล้ว ${totalVotesNow} จากที่ต้องมี ${requiredVotes}`);
 
-    // 2. ถ้ายังไม่ครบ ไม่ต้องทำอะไร (แค่โชว์สถานะว่ารอเพื่อน)
+    // 4. 🔥 จุดเปลี่ยนสำคัญ: ถ้ายังโหวตไม่ครบ ห้ามไปต่อเด็ดขาด
     if (totalVotesNow < requiredVotes) {
-      console.log("Waiting for other judges...");
+      console.log("ยังไม่ครบจำนวนกรรมการ... รอกรรมการท่านอื่น");
       if (typeof updateJudgeScreen === 'function') updateJudgeScreen();
-      return; 
+      return; // ⛔️ ตัดจบการทำงานตรงนี้เลย
     }
 
-    // 3. ถ้าครบแล้ว! (เฉพาะคนสุดท้ายที่กดจะมาถึงตรงนี้) 
-    // ให้บันทึกสถานะว่ารอบนี้ "เสร็จสมบูรณ์" ลงใน completedSessions
+    // 5. ถ้ามาถึงตรงนี้ แปลว่าครบทุกคนแล้ว (totalVotesNow >= requiredVotes)
+    console.log("✅ ครบทุกคนแล้ว! กำลังบันทึกสรุปผล...");
+
     await db.collection('completedSessions').doc(slotKey).set({
       roundIndex: ri,
       teamIndex: ti,
@@ -603,13 +607,15 @@ async function castVote(choice) {
       completedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // 4. 🔥 สั่งข้ามไปทีมถัดไป (เฉพาะเมื่อโหวตครบเท่านั้น)
-    // ตรงนี้อาจจะเป็นฟังก์ชัน nextStep() หรือให้ Admin เป็นคนกดก็ได้ครับ
-    console.log("All judges voted! Round complete.");
+    // แสดง UI อัปเดตหลังจากครบ
+    if (typeof updateJudgeScreen === 'function') updateJudgeScreen();
+
+    // หากคุณมีโค้ด auto-next ให้ใส่ตรงนี้ แต่ถ้าอยากให้ Admin กดเองก็ไม่ต้องใส่ครับ
+    console.log("Round marked as completed in DB.");
 
   } catch (error) {
     console.error("❌ Cast Vote Error:", error);
-    showToast("Error saving vote.", "fail");
+    showToast("Error saving vote. Please check connection.", "fail");
   }
 }
 
