@@ -10,39 +10,31 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <!-- ============================================================
-       JUDGE SETUP SCREEN — ระบบเลือกกรรมการ
-  ============================================================ -->
   <div id="screen-setup" class="screen active">
     <div class="setup-container">
-      
       <div class="setup-header">
-      <button id="btn-settings" class="icon-btn" aria-label="Settings" onclick="openAdmin()">
+        <button id="btn-settings-setup" class="icon-btn" aria-label="Settings" onclick="openAdmin()">
           ⚙️
         </button>
-    </div>
-
-    
-
-
+      </div>
       
       <div class="setup-logo">
         <div class="logo-icon">⚖️</div>
         <h1 class="setup-title" data-i18n="appTitle">Vote Buttons</h1>
         <p class="setup-subtitle" data-i18n="setupSubtitle">ระบบประเมินผลกรรมการ</p>
       </div>
+
       <div class="setup-form">
         <label class="setup-label" data-i18n="selectJudge">เลือกกรรมการของคุณ</label>
         <div id="judge-list" class="judge-list">
-          <!-- Populated by JS -->
           <div class="loading-pulse" data-i18n="loading">กำลังโหลด...</div>
         </div>
         <p class="setup-hint" data-i18n="setupHint">กรุณาเลือกชื่อของคุณก่อนเริ่มประเมิน</p>
@@ -50,12 +42,7 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       JUDGE VOTING SCREEN — หน้าหลักสำหรับกรรมการ
-  ============================================================ -->
   <div id="screen-judge" class="screen">
-
-    <!-- Top Bar -->
     <div class="top-bar">
       <div class="top-bar-info">
         <div class="current-team-label" data-i18n="teamLabel">ทีม</div>
@@ -64,34 +51,23 @@
       </div>
 
       <div class="top-bar-actions">
-        <button id="btn-home" class="icon-btn" aria-label="Go Home" onclick="goHome()">
-          🏠
-        </button>
-
+        <button id="btn-home" class="icon-btn" aria-label="Go Home" onclick="goHome()">🏠</button>
         <button id="btn-lang" class="icon-btn" aria-label="Toggle Language" onclick="toggleLanguage()">
           <span id="lang-label">EN</span>
         </button>
-
-        <button id="btn-settings" class="icon-btn" aria-label="Settings" onclick="openAdmin()">
-          ⚙️
-        </button>
+        <button id="btn-settings-judge" class="icon-btn" aria-label="Settings" onclick="openAdmin()">⚙️</button>
       </div>
     </div>
 
-    <!-- Progress Bar -->
     <div class="progress-bar-wrap">
       <div id="progress-bar" class="progress-bar"></div>
     </div>
 
-    <!-- Status Banner -->
     <div id="status-banner" class="status-banner">
       <span id="status-text" data-i18n="waitingActive">รอ Admin เปิดรอบการประเมิน...</span>
     </div>
 
-    <!-- Vote Area -->
     <div id="vote-area" class="vote-area">
-
-      <!-- Waiting Overlay -->
       <div id="vote-overlay" class="vote-overlay">
         <div class="overlay-inner">
           <div class="overlay-icon">⏳</div>
@@ -99,42 +75,25 @@
         </div>
       </div>
 
-      <!-- PASS Button -->
       <button id="btn-pass" class="vote-btn btn-pass" onclick="castVote('pass')" disabled>
-        <div class="btn-inner">
-          <span class="vote-icon">✓</span>
-          <span class="vote-label" data-i18n="pass">ผ่าน</span>
-        </div>
+        <div class="btn-inner"><span class="vote-icon">✓</span><span class="vote-label" data-i18n="pass">ผ่าน</span></div>
         <div class="btn-ripple"></div>
       </button>
 
-      <!-- FAIL Button -->
       <button id="btn-fail" class="vote-btn btn-fail" onclick="castVote('fail')" disabled>
-        <div class="btn-inner">
-          <span class="vote-icon">✗</span>
-          <span class="vote-label" data-i18n="fail">ไม่ผ่าน</span>
-        </div>
+        <div class="btn-inner"><span class="vote-icon">✗</span><span class="vote-label" data-i18n="fail">ไม่ผ่าน</span></div>
         <div class="btn-ripple"></div>
       </button>
-
     </div>
 
-    <!-- Judge Progress -->
     <div class="judge-progress">
       <div id="judge-dots" class="judge-dots"></div>
       <span id="judge-count-text" class="judge-count-text">0 / 0</span>
     </div>
-
-
-
   </div>
 
-  <!-- ============================================================
-       ADMIN SCREEN — หน้า Admin ตั้งค่าระบบ
-  ============================================================ -->
   <div id="screen-admin" class="screen">
     <div class="admin-container">
-
       <div class="admin-header">
         <button class="back-btn" onclick="closeAdmin()">
           <span class="icon">←</span> <span data-i18n="back">กลับ</span>
@@ -144,7 +103,6 @@
 
       <div class="admin-card card-control">
         <h3 class="card-title" data-i18n="currentStatus">สถานะปัจจุบัน</h3>
-        
         <div class="status-box">
           <div class="active-status">
             <div class="status-indicator" id="admin-status-dot"></div>
@@ -152,12 +110,10 @@
           </div>
           <div id="admin-current-info" class="admin-current-info">— · —</div>
         </div>
-
         <div class="admin-actions">
           <button id="btn-activate" class="activate-btn" onclick="activateRound()">
             <span data-i18n="activateRound">🚀 เปิดรอบปัจจุบัน</span>
           </button>
-          
           <button id="btn-reset" class="reset-btn secondary" onclick="resetAll()">
             <span data-i18n="resetAll">🔄 Reset ทั้งหมด</span>
           </button>
@@ -198,65 +154,44 @@
           💾 <span data-i18n="saveSettings">บันทึกการตั้งค่าลง Cloud</span>
         </button>
       </div>
-
     </div>
   </div>
 
-  <div id="toast" class="toast"></div>
-
-  <!-- ============================================================
-       SUMMARY SCREEN — หน้าสรุปผล
-  ============================================================ -->
   <div id="screen-summary" class="screen">
-
-    <!-- Swipe Container -->
     <div id="summary-swipe" class="summary-swipe">
-
-      <!-- Page 1: My Votes -->
       <div class="summary-page" id="summary-page-1">
         <div class="summary-header">
           <h2 class="summary-title" data-i18n="summaryTitle">📊 สรุปผลการประเมิน</h2>
           <p id="summary-judge-name" class="summary-judge-name"></p>
         </div>
-
         <div id="my-votes-table" class="votes-table"></div>
-
         <div class="swipe-hint">
           <span data-i18n="swipeHint">← ปัดซ้ายเพื่อดูกราฟสรุป</span>
           <button class="swipe-btn" onclick="goToPage(2)" data-i18n="viewChart">ดูกราฟ →</button>
         </div>
       </div>
 
-      <!-- Page 2: Charts -->
       <div class="summary-page" id="summary-page-2">
         <div class="summary-header">
           <button class="back-btn" onclick="goToPage(1)">← <span data-i18n="myVotes">ผลของฉัน</span></button>
           <h2 class="summary-title" data-i18n="allTeamsChart">📈 กราฟสรุปทุกทีม</h2>
         </div>
-
         <div class="charts-container">
           <div class="chart-card">
             <h3 class="chart-title" data-i18n="barChart">จำนวนคะแนน ผ่าน/ไม่ผ่าน ต่อทีม</h3>
-            <div class="chart-wrap">
-              <canvas id="bar-chart"></canvas>
-            </div>
+            <div class="chart-wrap"><canvas id="bar-chart"></canvas></div>
           </div>
           <div class="chart-card">
             <h3 class="chart-title" data-i18n="pieChart">สัดส่วน ผ่าน vs ไม่ผ่าน (รวมทุกทีม)</h3>
-            <div class="chart-wrap chart-wrap-pie">
-              <canvas id="pie-chart"></canvas>
-            </div>
+            <div class="chart-wrap chart-wrap-pie"><canvas id="pie-chart"></canvas></div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
-      <!-- Toast Notification -->
-    <div id="toast" class="toast"></div>
+  <div id="toast" class="toast"></div>
 
-  <!-- Audio (synthesized via Web Audio API) -->
   <script src="script.js"></script>
 </body>
 </html>
