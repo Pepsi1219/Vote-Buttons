@@ -25,12 +25,26 @@ let pieChartInst = null;
 let votesUnsubscribe = null;
 let audioCtx = null;
 
+function checkAuth() {
+  // ลองดึงข้อมูลจากความจำเบราว์เซอร์
+  const savedVoter = localStorage.getItem('voter_session');
+  
+  if (savedVoter) {
+    currentJudge = JSON.parse(savedVoter);
+    console.log("Found existing session for:", currentJudge.name);
+  } else {
+    currentJudge = null;
+    console.log("No session found. Forcing Setup Screen.");
+    // 🛡️ บังคับไปหน้าแรกทันที
+    showScreen('screen-setup'); 
+  }
+}
+
 /* TRANSLATIONS — ภาษาไทย & อังกฤษ*/
 const i18n = {
   th: {
-    appTitle:       "Vote Buttons",
-    setupSubtitle:  "ระบบประเมินผลกรรมการ",
-    selectJudge:    "เลือกกรรมการของคุณ",
+    appTitle:       "Shopfloor Best Practice Competition",
+    setupSubtitle:  "ระบบประเมินผล",
     loading:        "กำลังโหลด...",
     setupHint:      "กรุณาเลือกชื่อของคุณก่อนเริ่มประเมิน",
     teamLabel:      "ทีม",
@@ -81,9 +95,8 @@ const i18n = {
     alreadyVoted:   "คุณโหวตไปแล้ว",
   },
   en: {
-    appTitle:       "Vote Buttons",
-    setupSubtitle:  "Judge Evaluation System",
-    selectJudge:    "Select Your Name",
+    appTitle:       "Shopfloor Best Practice Competition",
+    setupSubtitle:  "Evaluation System",
     loading:        "Loading...",
     setupHint:      "Please select your name before starting",
     teamLabel:      "Team",
@@ -259,34 +272,52 @@ function initFirebase() {
 
 /* CORE LOGIC */
 function handleSessionChange() {
-  // 1. ถ้ายังไม่เลือกกรรมการ หรือยังโหลด Settings ไม่เสร็จ ให้หยุดรอที่หน้าแรก
-  if (!currentJudge || !settings) return;
+  // 1. 🛡️ เช็คชื่อกรรมการ (ถ้าไม่มี ต้องอยู่หน้าแรกเท่านั้น)
+  if (!currentJudge) {
+    // ป้องกันการรัน showScreen ซ้ำซากถ้าอยู่หน้าแรกอยู่แล้ว
+    if (getActiveScreen() !== 'screen-setup') {
+      showScreen('screen-setup');
+    }
+    return; 
+  }
 
-  // 2. ถ้าจบการประเมินทั้งหมดแล้ว (isCompleted: true)
+  // 2. ถ้าข้อมูลพื้นฐานยังไม่มา ให้รอ (แต่ไม่ต้องดีดกลับหน้าแรกแล้วเพราะมีชื่อแล้ว)
+  if (!settings || !sessionData) return;
+
+  // 3. ถ้าจบการประเมินแล้ว -> ไปหน้าสรุป
   if (sessionData.isCompleted) {
-    showScreen('screen-summary');
-    if (typeof buildSummary === 'function') buildSummary();
+    if (getActiveScreen() !== 'screen-summary') {
+      showScreen('screen-summary');
+    }
     return;
   }
 
-  // 3. จัดการสลับหน้าจออัตโนมัติ 
-  // หาก Admin เริ่มเปิดระบบ และเราเลือกชื่อแล้ว แต่ยังค้างหน้า Setup ให้เด้งไปหน้าตัดสิน
+  // 4. 🚀 จัดการสลับหน้าจอ (Navigation)
   const activeScreen = getActiveScreen();
-  if (activeScreen === 'screen-setup' || activeScreen === 'screen-admin') {
-    // กรณีไม่ได้เปิดหน้า Admin ค้างไว้ ให้พาไปหน้าตัดสิน
-    if (activeScreen !== 'screen-admin') showScreen('screen-judge');
+
+  /**
+   * แก้ไขจุดนี้: ถ้ากรรมการเลือกชื่อแล้ว (ผ่านข้อ 1 มาได้) 
+   * และเขายังค้างอยู่หน้าแรก (screen-setup) 
+   * เราควรพาเขาไปหน้าตัดสิน (screen-judge) ทันที! 
+   * ไม่ว่า Admin จะเริ่มระบบแล้ว (isActive) หรือยังไม่เริ่มก็ตาม
+   */
+  if (activeScreen === 'screen-setup') {
+    showScreen('screen-judge');
+    console.log("✅ Judge ready: Moving to judge screen.");
   }
 
-  // 4. อัปเดตข้อมูลบนหน้าจอตัดสิน (ทีมปัจจุบัน/รอบปัจจุบัน/แถบ Progress)
+  // 5. 🔄 อัปเดตข้อมูล UI ตามลำดับ
+  
+  // อัปเดตหน้าโหวต (ทีม/รอบ/สถานะรอแอดมิน)
   if (typeof updateJudgeScreen === 'function') updateJudgeScreen();
   
-  // 5. อัปเดตสถานะในหน้า Admin (ถ้าเปิดทิ้งไว้)
+  // อัปเดตสถานะแอดมิน (ถ้าเปิดหน้าแอดมินทิ้งไว้)
   if (typeof updateAdminStatus === 'function') updateAdminStatus();
   
-  // 6. โหลดคะแนนเดิมที่เราเคยกดไว้ (ป้องกันการกดซ้ำในทีมเดิม)
+  // โหลดคะแนนเดิมที่เคยบันทึกไว้
   if (typeof loadMyVoteForCurrentSlot === 'function') loadMyVoteForCurrentSlot();
   
-  // 7. เริ่มฟังคะแนนของกรรมการทุกคน (จุดไข่ปลา) ในทีมปัจจุบัน
+  // 6. 🎧 เริ่มฟังคะแนนแบบ Real-time
   listenToVotesForSlotFirestore();
 }
 
@@ -716,16 +747,14 @@ function renderJudgeList() {
   });
 }
 
-/**
- * แสดงข้อความเมื่อยังไม่มีการตั้งค่าข้อมูล
- */
+/* แสดงข้อความเมื่อยังไม่มีการตั้งค่าข้อมูล */
 function renderJudgeListEmpty() {
   const listEl = document.getElementById('judge-list');
   if (listEl) {
     listEl.innerHTML = `
-      <div class="no-data-state">
+      <div class="no-data-state" style="text-align: center;">
         <div class="loading-pulse">${t('noSettings')}</div>
-        <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 10px;">
+        <p style="font-size: 0.8rem; opacity: 0.2; margin-top: 75px;">
           (Admin: Please configure judges in settings)
         </p>
       </div>
@@ -735,43 +764,36 @@ function renderJudgeListEmpty() {
 
 /* SELECT JUDGE — เลือกกรรมการ */
 function selectJudge(index, name) {
-  // 1. ตรวจสอบความถูกต้องของข้อมูลก่อนบันทึก
-  if (index === undefined || !name) {
-    console.error("❌ ข้อมูลกรรมการไม่ครบถ้วน");
-    return;
-  }
+  if (index === undefined || !name) return;
 
-  // 2. อัปเดต Global State ในเครื่อง
+  // 1. อัปเดตในแรม
   currentJudge = { index: parseInt(index), name: name };
 
-  // 3. บันทึกข้อมูลลงใน Storage
-  // แนะนำ: เปลี่ยนจาก sessionStorage เป็น localStorage 
-  // เพื่อให้หากแอปเผลอปิดไป หรือเครื่องดับ แล้วเปิดใหม่ ไม่ต้องเลือกชื่อซ้ำอีกครั้งครับ
-  localStorage.setItem('judgeIndex', index);
-  localStorage.setItem('judgeName', name);
+  // 2. บันทึกลง Storage (ใช้ชื่อ key ที่สื่อสารง่าย)
+  localStorage.setItem('voter_session', JSON.stringify(currentJudge));
 
-  // 4. แสดง Toast ต้อนรับ (เพิ่มความเป็นมิตรให้แอป)
   showToast(`สวัสดีคุณ ${name}`, 'info');
 
-  // 5. เปลี่ยนหน้าจอและเริ่มฟังข้อมูลจาก Database
-  showScreen('screen-judge');
-  
-  // 6. บังคับให้โหลดข้อมูลล่าสุดทันที
-  if (typeof handleSessionChange === 'function') {
-    handleSessionChange();
-  }
+  // 3. เรียกใช้ handleSessionChange แทนการสั่ง showScreen ตรงๆ
+  // เพื่อให้ระบบตรวจสอบก่อนว่า Admin เปิดรอบหรือยัง
+  handleSessionChange();
 }
 
 /*ฟังก์ชันสำหรับดึงข้อมูลเดิมกลับมา (เรียกใช้ตอน init)*/
 function restoreSession() {
-  const savedIndex = localStorage.getItem('judgeIndex');
-  const savedName = localStorage.getItem('judgeName');
-
-  if (savedIndex !== null && savedName !== null) {
-    currentJudge = { index: parseInt(savedIndex), name: savedName };
-    return true; // พบข้อมูลเดิม
+  const saved = localStorage.getItem('voter_session');
+  if (saved) {
+    try {
+      currentJudge = JSON.parse(saved);
+      console.log("✅ Restored session for:", currentJudge.name);
+      return true;
+    } catch (e) {
+      console.error("❌ Data error:", e);
+      localStorage.removeItem('voter_session'); // ล้างทิ้งถ้าข้อมูลพัง
+      return false;
+    }
   }
-  return false; // ไม่พบข้อมูลเดิม
+  return false;
 }
 
 /* ADMIN — เปิด/ปิด Admin Panel */
@@ -1386,24 +1408,7 @@ function animateTeamChange() {
   }, 700);
 }
 
-/* RESTORE SESSION */
-function restoreSession() {
-  // เปลี่ยนมาใช้ localStorage เพื่อความทนทานของข้อมูลครับ
-  const idx  = localStorage.getItem('judgeIndex');
-  const name = localStorage.getItem('judgeName');
 
-  // ตรวจสอบว่ามีข้อมูลครบทั้ง Index และ Name หรือไม่
-  if (idx !== null && name) {
-    // ใช้ parseInt พร้อมระบุเลขฐาน 10 เพื่อความแม่นยำ
-    currentJudge = { 
-      index: parseInt(idx, 10), 
-      name: name 
-    };
-    return true; // กู้คืนสำเร็จ
-  }
-
-  return false; // ไม่พบข้อมูลเดิม (ต้องไปหน้า Setup)
-}
 
 /* INIT — เริ่มต้นระบบ */
 function init() {
