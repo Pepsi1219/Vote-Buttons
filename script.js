@@ -992,11 +992,14 @@ function updateAdminStatus() {
 
 /* RESET ALL  */
 async function resetAll() {
-  if (!confirm("คุณต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?")) return;
-  
+  if (!confirm("⚠️ ยืนยันการล้างข้อมูล config/session และ config/settings?")) return;
+
   try {
-    // 1. รีเซ็ตสถานะ Session ใน config/session
-    await db.collection('config').doc('session').set({
+    const batch = db.batch();
+
+    // 1. ล้างข้อมูลใน /config/session (เขียนทับด้วยค่าว่าง หรือค่าเริ่มต้นใหม่)
+    const sessionRef = db.collection('config').doc('session');
+    batch.set(sessionRef, {
       currentRoundIndex: 0,
       currentTeamIndex: 0,
       isActive: false,
@@ -1004,26 +1007,31 @@ async function resetAll() {
       resetAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // 2. 🔥 แก้จุดนี้: เปลี่ยนจาก 'votes' เป็น 'completedSessions'
-    const snapshot = await db.collection('completedSessions').get();
+    // 2. ล้างข้อมูลใน /config/settings (เขียนทับด้วยค่าว่างไปเลย)
+    const settingsRef = db.collection('config').doc('settings');
+    // เราจะใช้ .set แบบไม่ merge เพื่อให้ข้อมูลเดิม (judges, teams, rounds) หายไปทั้งหมด
+    batch.set(settingsRef, {
+      clearedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 3. กวาดล้าง Root Collection อื่นๆ (เผื่อมีค้าง)
+    const votesSnap = await db.collection('votes').get();
+    votesSnap.forEach(doc => batch.delete(doc.ref));
+
+    const compSnap = await db.collection('completedSessions').get();
+    compSnap.forEach(doc => batch.delete(doc.ref));
+
+    // ยืนยันการทำงาน
+    await batch.commit();
     
-    if (!snapshot.empty) {
-      const batch = db.batch();
-      snapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
-      console.log(`🧹 ลบข้อมูลใน completedSessions แล้ว ${snapshot.size} รายการ`);
-    }
-
-    showToast("🧹 รีเซ็ตระบบและล้างผลคะแนนเรียบร้อยแล้ว", "info");
-
-    // 3. สั่งให้หน้าจออัปเดต (เพื่อให้ UI กลับเป็น 0 ทันที)
-    if (typeof handleSessionChange === 'function') handleSessionChange();
+    showToast("🧹 ล้างข้อมูล config และคะแนนทั้งหมดแล้ว", "info");
+    
+    // บังคับรีโหลดเพื่อให้แอปกลับไปหน้า Setup ใหม่
+    setTimeout(() => location.reload(), 1000);
 
   } catch (error) {
     console.error("❌ Reset Error:", error);
-    showToast("รีเซ็ตไม่สำเร็จ: " + error.message, "fail");
+    showToast("Error: " + error.message, "fail");
   }
 }
 
