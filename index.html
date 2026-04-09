@@ -64,11 +64,14 @@
       </div>
 
       <div class="top-bar-actions">
-        <!-- Language Toggle -->
+        <button id="btn-home" class="icon-btn" aria-label="Go Home" onclick="goHome()">
+          🏠
+        </button>
+
         <button id="btn-lang" class="icon-btn" aria-label="Toggle Language" onclick="toggleLanguage()">
           <span id="lang-label">EN</span>
         </button>
-        <!-- Settings / Admin -->
+
         <button id="btn-settings" class="icon-btn" aria-label="Settings" onclick="openAdmin()">
           ⚙️
         </button>
@@ -122,8 +125,7 @@
       <span id="judge-count-text" class="judge-count-text">0 / 0</span>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast"></div>
+
 
   </div>
 
@@ -250,6 +252,9 @@
 
     </div>
   </div>
+
+      <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
 
   <!-- Audio (synthesized via Web Audio API) -->
   <script src="script.js"></script>
