@@ -493,16 +493,33 @@ function renderJudgeDots(voteData, judgeCount) {
 
 /* CHECK ALL VOTED — ตรวจสอบว่าครบแล้วหรือยัง */
 async function checkAllVoted(voteData, judgeCount, ri, ti) {
-  // 1. ตรวจสอบว่าโหวตครบทุกคนหรือยัง
-  const votedCount = Object.keys(voteData).length;
-  if (votedCount === 0 || votedCount < judgeCount) return;
+  // 1. ตรวจสอบความพร้อมของข้อมูล (ป้องกันค่าว่าง)
+  const actualJudgeCount = judgeCount || (settings.judges ? settings.judges.length : 0);
+  
+  // ถ้ายังไม่มีข้อมูลกรรมการเลย หรือจำนวนเป็น 0 ห้ามรันต่อ
+  if (actualJudgeCount === 0) return;
 
-  // 2. ป้องกันการรันซ้ำซ้อน (เลือกเฉพาะแอดมินเท่านั้นที่เป็นคนสั่งเปลี่ยนรอบ)
-  // หรือถ้าคุณต้องการให้แอปขยับเองอัตโนมัติ ให้รันต่อได้เลย
+  // นับจำนวนคนที่โหวตแล้วจริงๆ (กรองเอาเฉพาะที่เป็น Index ตัวเลข)
+  const votedCount = Object.keys(voteData).filter(key => !isNaN(key)).length;
+
+  console.log(`ตรวจสอบ: โหวตแล้ว ${votedCount} จากที่ต้องการ ${actualJudgeCount}`);
+
+  // 2. 🔥 เงื่อนไขเหล็ก: ต้องเท่ากับ หรือ มากกว่าเท่านั้น
+  // หากยังไม่ครบ ให้หยุดทำงานทันที
+  if (votedCount < actualJudgeCount) {
+    return; 
+  }
+
+  // 3. [สำคัญมาก] เช็คสถานะ isActive เพื่อป้องกันการ "เด้งซ้ำ" 
+  // หากระบบเพิ่งถูกสั่ง isActive: false ไปแล้ว ห้ามรันซ้ำ
+  if (!sessionData.isActive) return;
+
   const slotKey = `${ri}_${ti}`;
 
   try {
-    // 3. บันทึกประวัติว่าทีมนี้ประเมินเสร็จแล้ว (Firestore Style)
+    console.log("✅ ครบทุกคนแล้ว! กำลังบันทึกสรุปผลและเปลี่ยนรอบ...");
+
+    // 4. บันทึกประวัติ (Firestore Style)
     await db.collection('completedSessions').doc(slotKey).set({ 
       completedAt: firebase.firestore.FieldValue.serverTimestamp(),
       roundIndex: ri,
@@ -510,7 +527,7 @@ async function checkAllVoted(voteData, judgeCount, ri, ti) {
       totalVotes: votedCount
     });
 
-    // 4. คำนวณ Slot ถัดไป
+    // 5. คำนวณ Slot ถัดไป
     const teamCount  = settings.teams?.length  || 1;
     const roundCount = settings.rounds?.length || 1;
 
@@ -522,31 +539,21 @@ async function checkAllVoted(voteData, judgeCount, ri, ti) {
       nextRi = ri + 1;
     }
 
-    // 5. อัปเดตสถานะ Session ใน Firestore
     const sessionRef = db.collection('config').doc('session');
 
     if (nextRi >= roundCount) {
-      // --- จบการประเมินทั้งหมด ---
-      await sessionRef.update({ 
-        isCompleted: true, 
-        isActive: false 
-      });
+      await sessionRef.update({ isCompleted: true, isActive: false });
       showToast(t('allDone'), 'info');
     } else {
-      // --- ไปทีมถัดไป หรือ ช่วงถัดไป ---
-      // เราจะตั้ง isActive เป็น false เพื่อให้ Admin เป็นคนกดเริ่มใหม่ในทีมถัดไป
+      // 🚀 สั่งเปลี่ยนทีม และปิด isActive เพื่อให้ Admin เป็นคนกดเริ่มใหม่
       await sessionRef.update({
         currentTeamIndex: nextTi,
         currentRoundIndex: nextRi,
         isActive: false 
       });
-
+      
       const msg = nextTi === 0 ? t('nextRound') : t('nextTeam');
       showToast(msg, 'info');
-      
-      if (typeof animateTeamChange === 'function') {
-        animateTeamChange();
-      }
     }
   } catch (error) {
     console.error("❌ Error in checkAllVoted:", error);
