@@ -26,7 +26,6 @@
           ⚙️
         </button>
       </div>
-
       
       <button id="btn-lang" class="icon-btn" aria-label="Toggle Language" onclick="toggleLanguage()">
           <span id="lang-label">EN</span>
@@ -170,7 +169,7 @@
         </div>
         <div id="my-votes-table" class="votes-table"></div>
         <div class="swipe-hint">
-          <button id="btn-home" class="icon-btn" aria-label="Go Home" onclick="goHome()">🏠</button>
+          <button id="btn-home" class="icon-btn" aria-label="Go Home" onclick="goHome()";">🏠</button>
           <button class="swipe-btn" onclick="goToPage(2)" data-i18n="viewChart">ดูกราฟ →</button>
         </div>
       </div>
@@ -181,18 +180,28 @@
           <h2 class="summary-title" data-i18n="allTeamsChart">📈 กราฟสรุปทุกทีม</h2>
         </div>
         <div class="charts-container">
+
+          <div class="chart-card">
+          <h3 class="chart-title">🏆 The WINNER board 🏆</h3>
+          
+          <div id="winners-list" class="winners-container"></div>
+        
+          <div id="grand-champion-container" style="margin-top: 25px;"></div>
+        </div>
+          
           <div class="chart-card">
             <h3 class="chart-title" data-i18n="barChart">จำนวนคะแนน ผ่าน/ไม่ผ่าน ต่อทีม</h3>
             <div class="chart-wrap"><canvas id="bar-chart"></canvas></div>
           </div>
+          
           <div class="chart-card">
             <h3 class="chart-title" data-i18n="pieChart">สัดส่วน ผ่าน vs ไม่ผ่าน (รวมทุกทีม)</h3>
             <div class="chart-wrap chart-wrap-pie"><canvas id="pie-chart"></canvas></div>
           </div>
         </div>
+        </div>
       </div>
     </div>
-  </div>
 
   <div id="toast" class="toast"></div>
 
