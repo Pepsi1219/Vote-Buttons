@@ -1096,6 +1096,9 @@ async function buildSummary() {
     // 4. สร้างกราฟสรุปผลรวม (ใช้ Chart.js)
     buildCharts(allVotes);
 
+    // 🔥 5. เพิ่มบรรทัดนี้ลงไปเพื่อสร้างตารางผู้ชนะรายรอบ
+    renderRoundWinners(allVotes);
+
   } catch (error) {
     console.error("❌ Error building summary:", error);
     showToast("ไม่สามารถโหลดสรุปผลได้", "fail");
@@ -1267,6 +1270,80 @@ function goToPage(page) {
   updateSwipeDots(page);
 }
 
+// --- วางไว้ต่อท้าย buildCharts ได้เลย ---
+async function renderRoundWinners(allVotes) {
+  const container = document.getElementById('winners-list');
+  const grandContainer = document.getElementById('grand-champion-container');
+  if (!container || !grandContainer || !settings) return;
+
+  container.innerHTML = ''; 
+  grandContainer.innerHTML = '';
+
+  // สร้าง Object ไว้เก็บคะแนนรวมของแต่ละทีม
+  const totalScores = {};
+  settings.teams.forEach(team => totalScores[team] = 0);
+
+  // --- ส่วนที่ 1: วาดผู้ชนะรายรอบ (เหมือนเดิมแต่เพิ่มเก็บคะแนนรวม) ---
+  settings.rounds.forEach((roundName, ri) => {
+    let topScore = -1;
+    let winners = [];
+
+    settings.teams.forEach((teamName, ti) => {
+      const slotKey = `${ri}_${ti}`;
+      const votes = allVotes[slotKey] || {};
+      const passCount = Object.values(votes).filter(v => v === 'pass').length;
+
+      // สะสมคะแนนรวมให้แต่ละทีม
+      totalScores[teamName] += passCount;
+
+      if (passCount > topScore) {
+        topScore = passCount;
+        winners = [teamName];
+      } else if (passCount === topScore && topScore > 0) {
+        winners.push(teamName);
+      }
+    });
+
+    const row = document.createElement('div');
+    row.className = 'winner-row';
+    const winnerDisplay = (topScore > 0) ? `🥇 ${winners.join(' | ')}` : '-';
+    row.innerHTML = `
+      <div class="winner-info">
+        <small>${ri + 1}. ${roundName.toUpperCase()}</small>
+        <div class="winner-name">${winnerDisplay}</div>
+      </div>
+      <div class="winner-score">${topScore > 0 ? topScore : 0} Pass</div>
+    `;
+    container.appendChild(row);
+  });
+
+  // --- ส่วนที่ 2: คำนวณและวาด Grand Champion (ผู้ชนะคะแนนรวมสูงสุด) ---
+  let maxTotal = -1;
+  let champions = [];
+
+  Object.entries(totalScores).forEach(([teamName, score]) => {
+    if (score > maxTotal) {
+      maxTotal = score;
+      champions = [teamName];
+    } else if (score === maxTotal && maxTotal > 0) {
+      champions.push(teamName);
+    }
+  });
+
+  if (maxTotal > 0) {
+    const grandCard = document.createElement('div');
+    grandCard.className = 'grand-champion-card';
+    grandCard.innerHTML = `
+      <div class="grand-header">🏆 GRAND CHAMPION</div>
+      <div class="grand-content">
+        <div class="grand-names">${champions.join(' & ')}</div>
+        <div class="grand-score">Total: ${maxTotal} Points</div>
+      </div>
+      <div class="grand-footer">คะแนนรวมสูงสุด</div>
+    `;
+    grandContainer.appendChild(grandCard);
+  }
+}
 
 function goToPage(page) {
   const swipe = document.getElementById('summary-swipe');
@@ -1512,3 +1589,4 @@ function goHome() {
 
 // 🔥 สำคัญ: ต้องเพิ่มบรรทัดนี้ไว้ท้ายไฟล์เพื่อให้ HTML รู้จักฟังก์ชัน
 window.goHome = goHome;
+
