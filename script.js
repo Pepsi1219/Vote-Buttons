@@ -524,38 +524,40 @@ function renderJudgeDots(voteData, judgeCount) {
 
 /* CHECK ALL VOTED — ตรวจสอบว่าครบแล้วหรือยัง */
 async function checkAllVoted(voteData, judgeCount, ri, ti) {
-  // 1. ตรวจสอบความพร้อมของข้อมูล (ป้องกันค่าว่าง)
-  const actualJudgeCount = judgeCount || (settings.judges ? settings.judges.length : 0);
+  // 1. ดึงจำนวนกรรมการที่ต้องใช้จาก Settings โดยตรงเพื่อให้เป็นค่าที่นิ่งที่สุด
+  const requiredVotes = settings.judges ? settings.judges.length : (judgeCount || 0);
   
-  // ถ้ายังไม่มีข้อมูลกรรมการเลย หรือจำนวนเป็น 0 ห้ามรันต่อ
-  if (actualJudgeCount === 0) return;
+  if (requiredVotes === 0) return;
 
-  // นับจำนวนคนที่โหวตแล้วจริงๆ (กรองเอาเฉพาะที่เป็น Index ตัวเลข)
+  // นับจำนวนคนโหวตจากข้อมูลจริงใน Firestore Snapshot
   const votedCount = Object.keys(voteData).filter(key => !isNaN(key)).length;
 
-  console.log(`ตรวจสอบ: โหวตแล้ว ${votedCount} จากที่ต้องการ ${actualJudgeCount}`);
+  console.log(`🔍 ตรวจสอบคะแนน [${ri}_${ti}]: มาแล้ว ${votedCount}/${requiredVotes}`);
 
-  // 2. 🔥 เงื่อนไขเหล็ก: ต้องเท่ากับ หรือ มากกว่าเท่านั้น
-  // หากยังไม่ครบ ให้หยุดทำงานทันที
-  if (votedCount < actualJudgeCount) {
+  // 2. 🔥 [จุดตาย] ถ้ายังไม่ครบ ห้ามไปต่อเด็ดขาด 
+  // และห้ามใช้เงื่อนไข >= ให้ใช้ == หรือเช็คอย่างเข้มงวดเพื่อป้องกันการสั่งจบเร็วเกินไป
+  if (votedCount < requiredVotes) {
     return; 
   }
 
-  // 3. [สำคัญมาก] เช็คสถานะ isActive เพื่อป้องกันการ "เด้งซ้ำ" 
-  // หากระบบเพิ่งถูกสั่ง isActive: false ไปแล้ว ห้ามรันซ้ำ
-  if (!sessionData.isActive) return;
+  // 3. [สำคัญมาก] เช็คสถานะ isActive 
+  // ถ้า isActive เป็น false อยู่แล้ว แปลว่ามีเครื่องอื่นสั่งปิดระบบไปแล้ว ให้หยุดทำงานทันที
+  if (!sessionData || !sessionData.isActive) {
+    return;
+  }
 
   const slotKey = `${ri}_${ti}`;
 
   try {
-    console.log("✅ ครบทุกคนแล้ว! กำลังบันทึกสรุปผลและเปลี่ยนรอบ...");
+    console.log(`✅ ครบ ${requiredVotes} คนแล้ว! กำลังเตรียมบันทึกผลรอบ ${slotKey}...`);
 
-    // 4. บันทึกประวัติ (Firestore Style)
+    // 4. บันทึกประวัติลง completedSessions
+    // ใช้ .set แบบปกติ แต่ระบุจำนวน votedCount ที่นับได้จริง
     await db.collection('completedSessions').doc(slotKey).set({ 
       completedAt: firebase.firestore.FieldValue.serverTimestamp(),
       roundIndex: ri,
       teamIndex: ti,
-      totalVotes: votedCount
+      totalVotes: votedCount // จะต้องเท่ากับ requiredVotes แน่นอน
     });
 
     // 5. คำนวณ Slot ถัดไป
@@ -572,11 +574,17 @@ async function checkAllVoted(voteData, judgeCount, ri, ti) {
 
     const sessionRef = db.collection('config').doc('session');
 
+    // 6. 🚀 อัปเดตสถานะ Session เพื่อเปลี่ยนรอบ
     if (nextRi >= roundCount) {
-      await sessionRef.update({ isCompleted: true, isActive: false });
-      showToast(t('allDone'), 'info');
+      // จบการประเมินทั้งหมด
+      await sessionRef.update({ 
+        isCompleted: true, 
+        isActive: false 
+      });
+      console.log("🏆 การประเมินทั้งหมดเสร็จสิ้น!");
+      if (typeof showToast === 'function') showToast(t('allDone'), 'info');
     } else {
-      // 🚀 สั่งเปลี่ยนทีม และปิด isActive เพื่อให้ Admin เป็นคนกดเริ่มใหม่
+      // เปลี่ยนทีม/รอบถัดไป และปิด isActive เพื่อรอ Admin สั่งเริ่มใหม่
       await sessionRef.update({
         currentTeamIndex: nextTi,
         currentRoundIndex: nextRi,
@@ -584,8 +592,10 @@ async function checkAllVoted(voteData, judgeCount, ri, ti) {
       });
       
       const msg = nextTi === 0 ? t('nextRound') : t('nextTeam');
-      showToast(msg, 'info');
+      if (typeof showToast === 'function') showToast(msg, 'info');
+      console.log(`➡️ เปลี่ยนเป็นรอบ: ${nextRi} ทีม: ${nextTi}`);
     }
+
   } catch (error) {
     console.error("❌ Error in checkAllVoted:", error);
   }
@@ -593,63 +603,48 @@ async function checkAllVoted(voteData, judgeCount, ri, ti) {
 
 /* CAST VOTE — กรรมการกดปุ่ม */
 async function castVote(choice) {
-  // 1. Check เบื้องต้น
+  // 1. ตรวจสอบสิทธิ์และสถานะการเปิดรอบ
   if (!currentJudge || !sessionData?.isActive) return;
+  
   if (myVoteForCurrentSlot) {
     showToast(t('alreadyVoted'), 'info');
     return;
   }
 
+  // เล่นเสียงประกอบการกด (ถ้ามี)
   if (typeof playVoteSound === 'function') playVoteSound();
 
   const { currentRoundIndex: ri, currentTeamIndex: ti } = sessionData;
   const slotKey = `${ri}_${ti}`;
+  
+  // ดึงชื่อทีมปัจจุบันมาใช้แสดงในข้อความแจ้งเตือน
   const teamName = settings.teams?.[ti] || '—';
 
   try {
-    // 2. บันทึกคะแนนลง Firestore (ใช้ merge เพื่อรวมคะแนนกรรมการทุกคน)
     const voteRef = db.collection('votes').doc(slotKey);
+
+    // 2. 🚀 บันทึกคะแนนลง Firestore (ใช้ merge เพื่อรวมคะแนนกรรมการทุกคน)
     await voteRef.set({
       [currentJudge.index]: choice
     }, { merge: true });
 
-    // อัปเดตสถานะในเครื่อง
+    // 3. อัปเดตสถานะในเครื่อง
     myVoteForCurrentSlot = choice;
-    const msg = choice === 'pass' ? t('youVotedPass', teamName) : t('youVotedFail', teamName);
+
+    // 📣 แสดงข้อความแจ้งเตือนให้ตรงกับ i18n ที่คุณตั้งค่าไว้
+    // (เลือกใช้ youVotedPass หรือ youVotedFail ตามปุ่มที่กด)
+    const msg = choice === 'pass' 
+      ? t('youVotedPass', teamName) 
+      : t('youVotedFail', teamName);
+    
     showToast(msg, choice);
 
-    // 3. ดึงข้อมูลล่าสุดจาก DB มาเช็ค (ต้องดึงใหม่หลังจาก set เพื่อความแม่นยำ)
-    const voteDoc = await voteRef.get();
-    const voteData = voteDoc.data() || {};
-    
-    // กรองเฉพาะ Field ที่เป็นตัวเลข (index ของกรรมการ) เพื่อไม่ให้เอาพวก Field อื่นมาปน
-    const totalVotesNow = Object.keys(voteData).filter(key => !isNaN(key)).length; 
-    const requiredVotes = settings.judges ? settings.judges.length : 0;
-
-    console.log(`ตรวจสอบคะแนน: มาแล้ว ${totalVotesNow} จากที่ต้องมี ${requiredVotes}`);
-
-    // 4. 🔥 จุดเปลี่ยนสำคัญ: ถ้ายังโหวตไม่ครบ ห้ามไปต่อเด็ดขาด
-    if (totalVotesNow < requiredVotes) {
-      console.log("ยังไม่ครบจำนวนกรรมการ... รอกรรมการท่านอื่น");
-      if (typeof updateJudgeScreen === 'function') updateJudgeScreen();
-      return; // ⛔️ ตัดจบการทำงานตรงนี้เลย
-    }
-
-    // 5. ถ้ามาถึงตรงนี้ แปลว่าครบทุกคนแล้ว (totalVotesNow >= requiredVotes)
-    console.log("✅ ครบทุกคนแล้ว! กำลังบันทึกสรุปผล...");
-
-    await db.collection('completedSessions').doc(slotKey).set({
-      roundIndex: ri,
-      teamIndex: ti,
-      totalVotes: totalVotesNow,
-      completedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // แสดง UI อัปเดตหลังจากครบ
+    // 4. ✅ อัปเดตหน้าจอทันทีเพื่อให้ปุ่มเปลี่ยนเป็นสีเทาหรือโชว์สถานะรอ
     if (typeof updateJudgeScreen === 'function') updateJudgeScreen();
 
-    // หากคุณมีโค้ด auto-next ให้ใส่ตรงนี้ แต่ถ้าอยากให้ Admin กดเองก็ไม่ต้องใส่ครับ
-    console.log("Round marked as completed in DB.");
+    // หมายเหตุ: เราตัดส่วนการเช็คจำนวนโหวตและการบันทึก completedSessions ออกจากที่นี่
+    // เพื่อให้ checkAllVoted ใน Listener เป็นผู้จัดการเพียงจุดเดียว ป้องกันปัญหาคะแนนไม่ครบ
+    console.log(`✅ Vote saved for ${currentJudge.name} on slot ${slotKey}`);
 
   } catch (error) {
     console.error("❌ Cast Vote Error:", error);
