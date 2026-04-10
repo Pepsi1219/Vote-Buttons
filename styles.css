@@ -423,7 +423,6 @@ input  { font-family: var(--font-main); }
   position: relative;
   min-height: 0;
   padding-bottom: calc(20px + env(safe-area-inset-bottom));
-  margin-bottom: 10px;
 }
 
 /* Overlay */
@@ -571,6 +570,7 @@ input  { font-family: var(--font-main); }
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
 }
 
 .judge-dots {
