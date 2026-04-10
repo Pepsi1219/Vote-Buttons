@@ -292,17 +292,28 @@ input  { font-family: var(--font-main); }
   overflow: hidden;
 }
 
-/* --- Top Bar --- */
 .top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px 10px;
-  background: rgba(10,15,30,0.8);
+  
+  /* 🎨 เปลี่ยนจากสีคงที่ มาใช้ Variable ของแอป */
+  /* ผมใช้ rgba ร่วมกับ variable เพื่อให้มันยังมีความโปร่งแสง (Transparent) และ Blur ได้สวยเหมือนเดิม */
+  background: var(--clr-surface-70); /* หรือใช้ตัวแปรพื้นหลังหลักของคุณ */
+  
+  /* หากคุณไม่มีตัวแปรแบบโปร่งแสง ให้ใช้ค่านี้แทนครับ: */
+  /* background: rgba(var(--clr-bg-rgb), 0.8); */
+
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); /* เพื่อความชัวร์บน iPhone (Safari) */
+  
   border-bottom: 1px solid var(--clr-border);
   flex-shrink: 0;
   z-index: 10;
+  
+  /* 📱 แถม: ดันส่วนบนหลบติ่งหน้าจอมือถือ (Status Bar) */
+  padding-top: calc(14px + env(safe-area-inset-top));
 }
 
 .top-bar-info {
