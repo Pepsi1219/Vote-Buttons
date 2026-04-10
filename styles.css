@@ -218,7 +218,7 @@ input  { font-family: var(--font-main); }
   background: var(--clr-surface);
   border: 1.5px solid var(--clr-border);
   border-radius: var(--radius-lg);
-  padding: 18px 24px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -226,6 +226,7 @@ input  { font-family: var(--font-main); }
   transition: var(--transition);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 .judge-card::before {
   content: '';
@@ -421,6 +422,8 @@ input  { font-family: var(--font-main); }
   flex-direction: column;
   position: relative;
   min-height: 0;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  margin-bottom: 10px;
 }
 
 /* Overlay */
@@ -466,7 +469,7 @@ input  { font-family: var(--font-main); }
 /* --- Vote Buttons --- */
 .vote-btn {
   flex: 1;
-  width: 100%;
+  width: calc(100% - 10px); /* ลดขนาดความกว้างนิดนึง ไม่ให้ชนขอบจอ */
   border: none;
   position: relative;
   overflow: visible; /* เปลี่ยนจาก hidden เพื่อให้เงาฐานปุ่มไม่ขาด */
@@ -475,8 +478,10 @@ input  { font-family: var(--font-main); }
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 20px; /* เพิ่มความมนให้ดูทันสมัย */
-  margin: 10px 0;      /* เพิ่มระยะห่างระหว่างปุ่มแทนการใช้เส้นคั่นแบบเดิม */
+  border-radius: 24px; /* เพิ่มความมนให้ดูทันสมัย */
+  margin: 10px 0;
+  margin-left: auto;
+  margin-right: auto;
   
   /* หัวใจของ 3D: ใช้เงาแข็งเป็นฐานปุ่ม (Thickness) */
   transition: all 0.1s ease; /* เวลากดต้องตอบสนองไว */
