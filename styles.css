@@ -571,6 +571,9 @@ input  { font-family: var(--font-main); }
   gap: 12px;
   flex-shrink: 0;
   padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  margin-bottom: 10px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .judge-dots {
