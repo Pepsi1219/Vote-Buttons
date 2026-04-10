@@ -93,6 +93,7 @@ const i18n = {
     teamOf:         (t, total) => `ทีมที่ ${t}/${total}`,
     notVoted:       "ยังไม่ได้ประเมิน",
     alreadyVoted:   "คุณโหวตไปแล้ว",
+    homeText: "กลับหน้าแรก",
   },
   en: {
     appTitle:       "Shopfloor Best Practice Competition",
@@ -145,6 +146,7 @@ const i18n = {
     teamOf:         (t, total) => `Team ${t}/${total}`,
     notVoted:       "Not voted",
     alreadyVoted:   "Already voted",
+    homeText: "Home",
   }
 };
 
@@ -1605,3 +1607,36 @@ function goHome() {
 // 🔥 สำคัญ: ต้องเพิ่มบรรทัดนี้ไว้ท้ายไฟล์เพื่อให้ HTML รู้จักฟังก์ชัน
 window.goHome = goHome;
 
+
+function toggleTheme() {
+  const body = document.body;
+  const icon = document.getElementById('theme-icon');
+  
+  // ใส่ Animation ให้ไอคอน
+  icon.classList.remove('rotate-icon');
+  void icon.offsetWidth; // Trigger reflow เพื่อให้รัน animation ซ้ำได้
+  icon.classList.add('rotate-icon');
+
+  if (body.classList.contains('light-mode')) {
+    // เปลี่ยนเป็น Dark Mode
+    body.classList.remove('light-mode');
+    icon.textContent = '🌙';
+    localStorage.setItem('theme', 'dark');
+  } else {
+    // เปลี่ยนเป็น Light Mode
+    body.classList.add('light-mode');
+    icon.textContent = '☀️';
+    localStorage.setItem('theme', 'light');
+  }
+}
+
+// เช็คธีมตอนโหลดหน้าเว็บ
+window.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme');
+  const icon = document.getElementById('theme-icon');
+  
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-mode');
+    if (icon) icon.textContent = '☀️';
+  }
+});
