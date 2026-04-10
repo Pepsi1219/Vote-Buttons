@@ -63,7 +63,9 @@
       </div>
 
       <div class="top-bar-actions">
-        <button id="btn-home" class="icon-btn" aria-label="Go Home" onclick="goHome()">🏠</button>
+        <button id="btn-home" class="icon-btn" onclick="goHome()"><span>🏠</span>
+          <span data-i18n="homeText">กลับหน้าแรก</span>
+        </button>
       </div>
     </div>
 
@@ -176,8 +178,7 @@
         
         <div id="my-votes-table" class="votes-table"></div>
         <div class="swipe-hint">
-          <button id="btn-home" class="icon-btn" onclick="goHome()">
-  <span>🏠</span>
+          <button id="btn-home" class="icon-btn" onclick="goHome()"><span>🏠</span>
   <span data-i18n="homeText">กลับหน้าแรก</span>
 </button>
           <button class="swipe-btn" onclick="goToPage(2)" data-i18n="viewChart">ดูกราฟ →</button>
