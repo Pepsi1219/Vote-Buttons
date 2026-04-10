@@ -469,85 +469,92 @@ input  { font-family: var(--font-main); }
   width: 100%;
   border: none;
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* เปลี่ยนจาก hidden เพื่อให้เงาฐานปุ่มไม่ขาด */
   cursor: pointer;
-  transition: var(--transition);
-  min-height: 44px;
+  min-height: 100px; /* เพิ่มความสูงขึ้นเพื่อให้เห็นมิติ 3D ชัดเจน */
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 20px; /* เพิ่มความมนให้ดูทันสมัย */
+  margin: 10px 0;      /* เพิ่มระยะห่างระหว่างปุ่มแทนการใช้เส้นคั่นแบบเดิม */
+  
+  /* หัวใจของ 3D: ใช้เงาแข็งเป็นฐานปุ่ม (Thickness) */
+  transition: all 0.1s ease; /* เวลากดต้องตอบสนองไว */
 }
 
-.vote-btn:disabled { cursor: not-allowed; }
-
+/* ตั้งค่าสีฐานปุ่ม (Shadow Color) แยกตามประเภท */
 .btn-pass {
   background: linear-gradient(160deg, var(--clr-pass) 0%, var(--clr-pass-dark) 100%);
+  /* สร้างฐานปุ่มสีเขียวเข้ม */
+  box-shadow: 0 8px 0 #15803d, 0 15px 25px rgba(0, 0, 0, 0.3);
 }
+
 .btn-fail {
   background: linear-gradient(160deg, var(--clr-fail) 0%, var(--clr-fail-dark) 100%);
+  /* สร้างฐานปุ่มสีแดงเข้ม */
+  box-shadow: 0 8px 0 #991b1b, 0 15px 25px rgba(0, 0, 0, 0.3);
 }
 
 .btn-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   z-index: 2;
   position: relative;
   pointer-events: none;
+  transform: translateY(-4px); 
 }
 
+/* ปรับไอคอนให้ดูมีพลัง */
 .vote-icon {
-  font-size: clamp(3rem, 12vw, 5.5rem);
+  font-size: clamp(3rem, 12vw, 4.5rem); /* ลดขนาดลงนิดนึงเพื่อความสมดุล */
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  text-shadow: 0 4px 10px rgba(0,0,0,0.3);
   transition: transform var(--transition-bounce);
 }
+
 .vote-label {
-  font-size: clamp(1.6rem, 7vw, 3rem);
+  font-size: clamp(1.4rem, 6vw, 2.2rem);
   font-weight: 900;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-/* Pressed states */
+/* --- 🎯 สถานะตอนกด (Active / Pressed) --- */
+.vote-btn:not(:disabled):active,
+.vote-btn.pressed {
+  /* ปุ่มยุบตัวลง 8px (เท่ากับความหนาของเงาฐาน) */
+  transform: translateY(8px);
+  /* เงาฐานหายไปเพราะปุ่มแนบพื้นแล้ว */
+  box-shadow: 0 0 0 transparent, 0 2px 5px rgba(0, 0, 0, 0.2);
+  filter: brightness(1.1);
+}
+
+/* ขยายไอคอนตอนกด */
 .vote-btn:not(:disabled):active .vote-icon,
 .vote-btn.pressed .vote-icon {
-  transform: scale(1.2);
-}
-.vote-btn:not(:disabled):active {
-  filter: brightness(1.15);
+  transform: scale(1.1);
 }
 
-/* Voted state */
-.vote-btn.voted-state {
-  opacity: 0.55;
-}
-.vote-btn.voted-self {
-  opacity: 1;
-  box-shadow: var(--shadow-pass);
-}
-.btn-fail.voted-self { box-shadow: var(--shadow-fail); }
-
-/* Ripple */
-.btn-ripple {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%);
-  opacity: 0;
-  transform: scale(0);
-  transition: all 0.4s ease;
-  pointer-events: none;
-}
-.vote-btn:active .btn-ripple {
-  opacity: 1;
-  transform: scale(2);
+/* --- 🎯 สถานะเมื่อโหวตไปแล้ว --- */
+.vote-btn.voted-state:not(.voted-self) {
+  opacity: 0.4;
+  transform: translateY(4px);
+  box-shadow: none;
+  filter: grayscale(0.5);
 }
 
-/* Separator line between buttons */
 .vote-btn + .vote-btn {
-  border-top: 3px solid rgba(0,0,0,0.3);
+  border-top: none;
+}
+
+/* ปุ่ม Disabled (รอ Admin) */
+.vote-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: translateY(4px);
 }
 
 /* --- Judge Progress --- */
