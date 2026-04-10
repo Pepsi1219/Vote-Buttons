@@ -94,6 +94,8 @@ const i18n = {
     notVoted:       "ยังไม่ได้ประเมิน",
     alreadyVoted:   "คุณโหวตไปแล้ว",
     homeText: "กลับหน้าแรก",
+    confirmJudgeName: "ยืนยันว่าคุณคือ: ",
+    warningNoEdit: "\n\n*หากกดยืนยันแล้ว คุณจะไม่สามารถแก้ไขชื่อได้ภายหลัง",
   },
   en: {
     appTitle:       "Shopfloor Best Practice Competition",
@@ -147,6 +149,8 @@ const i18n = {
     notVoted:       "Not voted",
     alreadyVoted:   "Already voted",
     homeText: "Home",
+    confirmJudgeName: "Confirm that you are: ",
+    warningNoEdit: "\n\n*Once confirmed, you cannot change your name later.",
   }
 };
 
@@ -783,16 +787,34 @@ function renderJudgeListEmpty() {
 function selectJudge(index, name) {
   if (index === undefined || !name) return;
 
-  // 1. อัปเดตในแรม
-  currentJudge = { index: parseInt(index), name: name };
+  // 1. ตรวจสอบภาษาปัจจุบัน (ตรวจสอบจากตัวแปรที่คุณใช้เก็บ เช่น currentLang หรือดึงจาก <html>)
+  const lang = (typeof currentLang !== 'undefined') ? currentLang : (document.documentElement.lang || 'th');
 
-  // 2. บันทึกลง Storage (ใช้ชื่อ key ที่สื่อสารง่าย)
+  // 2. ดึงข้อความจาก i18n โดยระบุ Key ที่พงศธรต้องไปเพิ่มในตัวแปร i18n นะครับ
+  // ถ้าหา Key ไม่เจอ จะใช้ข้อความภาษาไทยเป็นค่าเริ่มต้น (Fallback)
+  const msgPrefix = (i18n[lang] && i18n[lang].confirmJudgeName) 
+                    ? i18n[lang].confirmJudgeName 
+                    : "ยืนยันว่าคุณคือ: ";
+                    
+  const msgWarning = (i18n[lang] && i18n[lang].warningNoEdit) 
+                     ? i18n[lang].warningNoEdit 
+                     : "\n\n*หากกดยืนยันแล้ว คุณจะไม่สามารถแก้ไขชื่อได้ภายหลัง";
+
+  const fullMsg = `${msgPrefix} "${name}"? ${msgWarning}`;
+
+  // 3. แสดงหน้าต่างยืนยันของ Browser
+  if (!window.confirm(fullMsg)) {
+    return; // ถ้ากดยกเลิก ไม่ต้องทำอะไรต่อ
+  }
+
+  // --- ส่วนทำงานเดิมของพงศธร ---
+  currentJudge = { index: parseInt(index), name: name };
   localStorage.setItem('voter_session', JSON.stringify(currentJudge));
 
-  showToast(`สวัสดีคุณ ${name}`, 'info');
+  if (typeof showToast === 'function') {
+    showToast(`สวัสดีคุณ ${name}`, 'info');
+  }
 
-  // 3. เรียกใช้ handleSessionChange แทนการสั่ง showScreen ตรงๆ
-  // เพื่อให้ระบบตรวจสอบก่อนว่า Admin เปิดรอบหรือยัง
   handleSessionChange();
 }
 
