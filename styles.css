@@ -831,6 +831,7 @@ input  { font-family: var(--font-main); }
 .summary-title {
   font-size: 1.4rem;
   font-weight: 900;
+  margin-top: 10px;
 }
 
 .summary-judge-name {
@@ -1036,4 +1037,111 @@ input  { font-family: var(--font-main); }
 #btn-settings-setup:hover {
   background: rgba(0, 0, 0, 0.6);
   transform: rotate(45deg); /* เพิ่มลูกเล่นให้เฟืองหมุนตอนเอาเมาส์วาง */
+}
+
+
+
+/* ทีมที่ชนะแต่ละรอบ */
+.winners-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.winner-row {
+  background: rgba(255, 255, 255, 0.05); /* พื้นหลังมืดโปร่งแสง */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 4px solid #ffd700; /* เส้นสีทองด้านซ้าย */
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  transition: transform 0.2s;
+}
+
+.winner-row:hover {
+  transform: scale(1.02); /* ขยายเล็กน้อยเวลาเอาเมาส์วาง */
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.winner-info small {
+  display: block;
+  color: #94a3b8; /* สีเทาฟ้าให้อ่านง่ายขึ้น */
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.winner-row:last-child {
+  border-bottom: none;
+}
+
+.winner-name {
+  font-weight: bold;
+  color: #f8fafc; /* สีขาวนวล */
+  font-size: 1.1rem;
+}
+
+.winner-score {
+  background: linear-gradient(135deg, #ffd700, #ffb900); /* ไล่เฉดสีทอง */
+  color: #000;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  min-width: 70px;
+  text-align: center;
+}
+
+/* คะแนนรวมสูงสุด */
+.grand-champion-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid #ffd700;
+  border-radius: 15px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  animation: shine 3s infinite;
+}
+
+.grand-header {
+  color: #ffd700;
+  font-weight: 900;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.grand-names {
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
+.grand-score {
+  color: #fbbf24;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.grand-footer {
+  margin-top: 15px;
+  font-size: 0.7rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* เอฟเฟกต์ไฟวิ่งที่ขอบการ์ด */
+@keyframes shine {
+  0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.5); }
+  100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
 }
