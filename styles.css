@@ -31,6 +31,38 @@
   --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ---------- Light Mode Variables ---------- */
+body.light-mode {
+  /* พื้นหลังและพื้นผิว */
+  --clr-bg:        #f8fafc;
+  --clr-surface:   #ffffff;
+  --clr-surface2:  #f1f5f9;
+  --clr-border:    #e2e8f0;
+  
+  /* ข้อความ */
+  --clr-text:      #0f172a;
+  --clr-text-dim:  #475569;
+  --clr-text-muted:#94a3b8;
+  
+  /* สีสถานะ (ปรับให้อ่อนลงเล็กน้อยเพื่อให้สบายตาในโหมดสว่าง) */
+  --clr-pass-glow: rgba(16,185,129,0.15);
+  --clr-fail-glow: rgba(239,68,68,0.15);
+  --clr-accent:    #2563eb; /* น้ำเงินเข้มขึ้นนิดนึงเพื่อให้มองเห็นชัดบนพื้นขาว */
+
+  /* เงา (ต้องปรับให้จางลง ไม่ให้ดูสกปรก) */
+  --shadow-card: 0 4px 20px rgba(0,0,0,0.06);
+  --shadow-pass: 0 4px 20px var(--clr-pass-glow);
+  --shadow-fail: 0 4px 20px var(--clr-fail-glow);
+}
+
+/* ---------- บังคับให้เปลี่ยนสีพื้นหลังและสีข้อความพื้นฐาน ---------- */
+body {
+  background-color: var(--clr-bg);
+  color: var(--clr-text);
+  font-family: var(--font-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 /* ---------- Reset ---------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -323,8 +355,23 @@ input  { font-family: var(--font-main); }
   justify-content: center;
   transition: var(--transition);
 }
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
 .icon-btn:hover { background: var(--clr-accent); border-color: var(--clr-accent); }
 .icon-btn:active { transform: scale(0.9); }
+
+.rotate-icon {
+  animation: rotate 0.4s ease-in-out;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg) scale(0.5); opacity: 0; }
+  to { transform: rotate(360deg) scale(1); opacity: 1; }
+}
 
 /* --- Progress Bar --- */
 .progress-bar-wrap {
@@ -908,7 +955,7 @@ input  { font-family: var(--font-main); }
 }
 
 .vote-row-rounds {
-  display: flex;
+  display: grid;
   flex-wrap: wrap;
   gap: 6px;
 }
@@ -937,15 +984,39 @@ input  { font-family: var(--font-main); }
   padding-top: 16px;
 }
 .swipe-btn {
-  background: var(--clr-accent);
-  color: #fff;
-  padding: 8px 18px;
+  /* 🎨 ใช้ตัวแปรสีจากระบบเดิมที่คุณตั้งไว้ */
+  background-color: var(--clr-surface2); /* สีพื้นหลังจะเปลี่ยนตามโหมด */
+  color: var(--clr-text);               /* สีตัวหนังสือและลูกศรเปลี่ยนตามโหมด */
+  border: 1px solid var(--clr-border);  /* สีขอบเปลี่ยนตามโหมด */
+  
+  padding: 10px 20px;
   border-radius: var(--radius-md);
   font-size: 0.85rem;
   font-weight: 700;
+  cursor: pointer;
+  
+  display: flex;
+  align-items: center;
+  gap: 8px;
   transition: var(--transition-bounce);
+  box-shadow: var(--shadow-card);
 }
-.swipe-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(59,130,246,0.4); }
+
+/* เอฟเฟกต์ตอน Hover */
+.swipe-btn:hover {
+  background-color: var(--clr-accent); /* เปลี่ยนเป็นสีน้ำเงินเด่นตอนชี้ */
+  color: #ffffff;                     /* บังคับตัวหนังสือขาวเพื่อให้ตัดกับสีน้ำเงิน */
+  border-color: var(--clr-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--clr-pass-glow); /* ใช้เงาสีเขียวจางๆ ตามระบบเดิมของคุณ */
+}
+
+/* 🌙 ปรับแต่งพิเศษสำหรับ Light Mode */
+body.light-mode .swipe-btn {
+  background-color: #ffffff; /* ในโหมดสว่างให้ปุ่มเป็นสีขาวดูสะอาดตา */
+  border-color: #e2e8f0;     /* ขอบสีเทาอ่อน */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
 
 /* Charts */
 .charts-container {
@@ -1028,58 +1099,152 @@ input  { font-family: var(--font-main); }
 
 /* ปุ่มเปลี่ยนภาษาไปอยู่ขวาบน */
 #btn-lang {
-  position: fixed;    /* ทำให้ลอยคงที่ ไม่เลื่อนตามการ Scroll */
-  top: 20px;          /* ห่างจากขอบบน 20px */
-  right: 20px;        /* ห่างจากขอบขวา 20px */
-  z-index: 9999;      /* อยู่ชั้นบนสุดเสมอ ไม่โดนอย่างอื่นบัง */
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
   
-  /* ตกแต่งเพิ่มเติมให้สวยงามแบบตั๋วหนัง/Modern */
-  background: rgba(255, 255, 255, 0.2); 
-  backdrop-filter: blur(5px); /* พื้นหลังเบลอนิดๆ ดูพรีเมียม */
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
+  /* 🎨 เปลี่ยนจากสี Fix เป็น Variables */
+  background: var(--clr-surface2); /* ใช้พื้นหลังตามโหมด (เข้ม/สว่าง) */
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text);        /* สีตัวหนังสือจะเปลี่ยนตามโหมดอัตโนมัติ */
+  
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm); /* ใช้ค่ารัศมีจากตัวแปรของคุณ */
   cursor: pointer;
   font-weight: bold;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-card);
 }
 
 #btn-lang:hover {
-  background: rgba(255, 255, 255, 0.4);
-  transform: scale(1.05); /* ขยายใหญ่นิดนึงตอนเอาเมาส์วาง */
+  /* ปรับให้ดูเด่นขึ้นเมื่อ Hover โดยอ้างอิงตามสี Accent */
+  background: var(--clr-accent);
+  color: #ffffff; /* เวลา hover ให้เป็นสีขาวเสมอเพื่อให้เด่น */
+  transform: scale(1.05);
+}
+
+/* 🌙 เพิ่มเติม: สำหรับโหมดสว่างโดยเฉพาะ ถ้าอยากให้ปุ่มดูใสๆ พรีเมียม */
+body.light-mode #btn-lang {
+  background: rgba(255, 255, 255, 0.7); /* ขาวใสในโหมดสว่าง */
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 
 /* ปุ่มตั้งค่ามาอยู่ซ้ายล่าง */
 #btn-settings-setup {
-  position: fixed;    /* ลอยคงที่ */
-  bottom: 20px;       /* ห่างจากขอบล่าง 20px */
-  left: 20px;         /* ห่างจากขอบซ้าย 20px */
-  z-index: 9999;      /* อยู่ชั้นบนสุด */
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 9999;
 
-
-  /* ตกแต่งให้ดูเป็นปุ่มลับๆ หรือปุ่มตั้งค่า */
-  background: rgba(0, 0, 0, 0.3); /* มืดนิดๆ จะได้ไม่กวนสายตา */
+  /* 🎨 เปลี่ยนจากสี Fix เป็น Variables */
+  background: var(--clr-surface2); /* ใช้สีพื้นผิวลำดับที่ 2 ของแต่ละโหมด */
   backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  width: 45px;        /* ทำเป็นทรงกลมหรือจัตุรัสให้กดง่าย */
+  border: 1px solid var(--clr-border); /* ขอบจะเปลี่ยนตามโหมด */
+  color: var(--clr-text);              /* ไอคอนเฟืองจะเปลี่ยนสีตามโหมด */
+  
+  width: 45px;
   height: 45px;
-  border-radius: 50%; /* วงกลมพรีเมียม */
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-card); /* เพิ่มเงาให้ดูมีมิติ */
 }
 
 #btn-settings-setup:hover {
-  background: rgba(0, 0, 0, 0.6);
-  transform: rotate(45deg); /* เพิ่มลูกเล่นให้เฟืองหมุนตอนเอาเมาส์วาง */
+  /* เมื่อ Hover ให้ใช้สี Accent (น้ำเงิน) เพื่อความสวยงาม */
+  background: var(--clr-accent);
+  color: #ffffff; /* บังคับไอคอนขาวตอน Hover ให้ตัดกับสีน้ำเงิน */
+  border-color: var(--clr-accent);
+  transform: rotate(45deg) scale(1.1);
 }
 
+/* 🌙 ปรับแต่งพิเศษสำหรับ Light Mode ถ้าอยากให้ดูใสๆ */
+body.light-mode #btn-settings-setup {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* ปุ่มสลับโหมดมาอยู่ซ้ายบน */
+#btn-theme-toggle {
+  position: fixed;    /* ลอยคงที่ */
+  top: 20px;          /* ห่างจากขอบบน 20px (เท่ากับปุ่มภาษา) */
+  left: 20px;         /* ห่างจากขอบซ้าย 20px */
+  z-index: 9999;      /* อยู่ชั้นบนสุด */
+
+  /* ตกแต่งให้พรีเมียมเหมือนปุ่มอื่นๆ */
+  background: var(--clr-surface2);
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text);
+  
+  width: 45px;
+  height: 45px;
+  border-radius: 50%; /* วงกลม */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-card);
+}
+
+#btn-theme-toggle:hover {
+  background: var(--clr-accent);
+  color: #ffffff;
+  transform: scale(1.1) rotate(15deg); /* เพิ่มลูกเล่นเอียงนิดๆ ตอนชี้ */
+}
+
+/* ปรับแต่งพิเศษสำหรับ Light Mode */
+body.light-mode #btn-theme-toggle {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* ปุ่มโฮมเปลี่ยนสี */
+#btn-home.icon-btn {
+  background-color: var(--clr-surface2);
+  color: var(--clr-text);
+  border: 2px solid var(--clr-border);
+  
+  width: auto; 
+  min-width: 120px;  
+  height: 45px;
+  padding: 0 20px; 
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;              /* ระยะห่างระหว่างไอคอนกับข้อความ */
+  
+  cursor: pointer;
+  transition: all 0.3s var(--transition);
+  box-shadow: var(--shadow-card);
+  font-weight: bold;
+}
+
+/* เอฟเฟกต์ตอน Hover */
+#btn-home.icon-btn:hover {
+  background-color: var(--clr-accent);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--clr-pass-glow);
+}
+
+/* 🌙 เพิ่มเติม: ปรับแต่งสีเงาให้จางลงในโหมดสว่าง (เพื่อให้ดูพรีเมียม) */
+body.light-mode #btn-home.icon-btn {
+  background-color: #ffffff; /* ในโหมดสว่าง อาจจะใช้สีขาวล้วนให้ดูสะอาด */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
 
 
 /* ทีมที่ชนะแต่ละรอบ */
@@ -1091,44 +1256,45 @@ input  { font-family: var(--font-main); }
 }
 
 .winner-row {
-  background: rgba(255, 255, 255, 0.05); /* พื้นหลังมืดโปร่งแสง */
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: 4px solid #ffd700; /* เส้นสีทองด้านซ้าย */
+  /* 🎨 เปลี่ยนจาก RGBA เป็นตัวแปรพื้นผิว */
+  background: var(--clr-surface2); 
+  border: 1px solid var(--clr-border);
+  border-left: 4px solid var(--clr-accent); /* ใช้สีเน้น (Accent) หรือทองที่คุณตั้งไว้ */
   border-radius: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  transition: transform 0.2s;
+  transition: transform 0.2s, background 0.2s;
 }
 
 .winner-row:hover {
-  transform: scale(1.02); /* ขยายเล็กน้อยเวลาเอาเมาส์วาง */
-  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.02);
+  background: var(--clr-surface); /* ให้สว่าง/มืดขึ้นนิดนึงเวลา Hover */
 }
 
 .winner-info small {
   display: block;
-  color: #94a3b8; /* สีเทาฟ้าให้อ่านง่ายขึ้น */
+  /* 🎨 เปลี่ยนสีเทา Fix เป็นตัวแปรสีข้อความแบบรอง */
+  color: var(--clr-text); 
+  opacity: 0.7; /* ทำให้ดูเป็นตัวหนังสือขนาดเล็ก/จางลง */
   font-size: 0.75rem;
   margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.winner-row:last-child {
-  border-bottom: none;
-}
-
 .winner-name {
   font-weight: bold;
-  color: #f8fafc; /* สีขาวนวล */
+  /* 🎨 เปลี่ยนสีขาว Fix เป็นตัวแปรข้อความหลัก */
+  color: var(--clr-text);
   font-size: 1.1rem;
 }
 
 .winner-score {
-  background: linear-gradient(135deg, #ffd700, #ffb900); /* ไล่เฉดสีทอง */
-  color: #000;
+  /* คะแนนคงไว้เป็นสีทองได้ เพราะสีทองตัดกับทั้งขาวและดำครับ */
+  background: linear-gradient(135deg, #ffd700, #ffb900);
+  color: #000; /* ตัวเลขคะแนนข้างในสีดำเสมอเพื่อให้ชัด */
   padding: 4px 12px;
   border-radius: 20px;
   font-weight: 800;
@@ -1138,10 +1304,21 @@ input  { font-family: var(--font-main); }
   text-align: center;
 }
 
+/* 🌙 ปรับแต่งพิเศษสำหรับ Light Mode */
+body.light-mode .winner-row {
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .winner-info small {
+  color: #64748b; /* สีเทาเข้มขึ้นในโหมดสว่าง */
+}
+
 /* คะแนนรวมสูงสุด */
 .grand-champion-card {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border: 2px solid #ffd700;
+  /* 🎨 ปรับพื้นหลังให้เปลี่ยนตามโหมด แต่ยังคงความหรูหรา */
+  background: linear-gradient(135deg, var(--clr-surface) 0%, var(--clr-surface2) 100%);
+  border: 2px solid #ffd700; /* ขอบทองคงไว้เพื่อความขลัง */
   border-radius: 15px;
   padding: 20px;
   text-align: center;
@@ -1152,23 +1329,25 @@ input  { font-family: var(--font-main); }
 }
 
 .grand-header {
-  color: #ffd700;
+  color: #ffd700; /* สีทองอ่านได้ดีทั้งบนพื้นมืดและสว่าง */
   font-weight: 900;
   font-size: 0.9rem;
   letter-spacing: 2px;
   margin-bottom: 10px;
+  text-transform: uppercase;
 }
 
 .grand-names {
-  color: #ffffff;
+  /* 🎨 เปลี่ยนจากขาวตายตัว เป็นสีข้อความตามโหมด */
+  color: var(--clr-text);
   font-size: 2rem;
   font-weight: bold;
   margin-bottom: 5px;
-  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+  text-shadow: 0 0 10px var(--clr-pass-glow); /* ใช้สีเรืองแสงตามโหมด */
 }
 
 .grand-score {
-  color: #fbbf24;
+  color: #fbbf24; /* สีเหลืองอำพัน สวยทั้งสองโหมด */
   font-size: 1.2rem;
   font-weight: 600;
 }
@@ -1176,8 +1355,24 @@ input  { font-family: var(--font-main); }
 .grand-footer {
   margin-top: 15px;
   font-size: 0.7rem;
-  color: #64748b;
+  /* 🎨 ใช้สีข้อความรองเพื่อให้จางลงตามโหมด */
+  color: var(--clr-text);
+  opacity: 0.6;
   font-style: italic;
+}
+
+/* 🌙 ปรับแต่งพิเศษสำหรับ Light Mode เพื่อไม่ให้มันดูทึบเกินไป */
+body.light-mode .grand-champion-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  box-shadow: 0 10px 25px rgba(255, 215, 0, 0.15);
+  border: 2px solid #fbbf24;
+}
+
+/* คง Animation Shine ไว้เพื่อให้มันดูเด่นเสมอ */
+@keyframes shine {
+  0% { opacity: 0.9; }
+  50% { opacity: 1; transform: scale(1.01); }
+  100% { opacity: 0.9; }
 }
 
 /* เอฟเฟกต์ไฟวิ่งที่ขอบการ์ด */
