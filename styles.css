@@ -667,31 +667,71 @@ input  { font-family: var(--font-main); }
   line-height: 1.6;
 }
 
-/* Buttons */
+/* Container สำหรับจัดวางปุ่ม */
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;       /* ให้ปุ่มลงมาซ้อนกันได้เมื่อพื้นที่ไม่พอ */
+  gap: 16px;             /* ระยะห่างระหว่างปุ่มทั้งแนวตั้งและแนวนอน */
+  margin-top: 24px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ปรับแต่งปุ่มพื้นฐาน (Shared Styles) */
+.activate-btn, .reset-btn {
+  flex: 1 1 200px;       /* ยืดเต็มที่แต่ไม่น้อยกว่า 200px */
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;    /* กันตัวหนังสือตัดบรรทัด */
+}
+
+/* ปุ่มหลัก: เปิดรอบปัจจุบัน */
 .activate-btn {
   background: linear-gradient(135deg, var(--clr-accent), #1d4ed8);
   color: #fff;
-  padding: 14px 20px;
-  border-radius: var(--radius-md);
+  padding: 14px 24px;
   font-size: 1rem;
   font-weight: 700;
+  border: none;
   transition: var(--transition-bounce);
-  text-align: center;
 }
-.activate-btn:hover   { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,0.4); }
-.activate-btn:active  { transform: scale(0.97); }
 
+.activate-btn:hover { 
+  transform: translateY(-2px); 
+  box-shadow: 0 8px 24px rgba(59,130,246,0.4); 
+}
+
+.activate-btn:active { 
+  transform: scale(0.97); 
+}
+
+/* ปุ่มรอง: Reset ทั้งหมด (ทำให้ดูเล็กลงและไม่เด่นเท่า) */
 .reset-btn {
   background: transparent;
   border: 1.5px solid var(--clr-fail);
   color: var(--clr-fail);
   padding: 10px 20px;
-  border-radius: var(--radius-md);
   font-size: 0.9rem;
   font-weight: 600;
   transition: var(--transition);
+  /* บนหน้าจอใหญ่ (Desktop) จะไม่ยอมให้ปุ่ม Reset ขยายใหญ่เท่าปุ่มหลัก */
+  max-width: fit-content; 
 }
-.reset-btn:hover { background: rgba(239,68,68,0.1); }
+
+.reset-btn:hover { 
+  background: rgba(239,68,68,0.1); 
+}
+
+/* Media Query สำหรับมือถือ (หน้าจอเล็กมาก) */
+@media (max-width: 480px) {
+  .reset-btn {
+    max-width: 100%; /* บนมือถือให้ขยายเต็มความกว้างเหมือนปุ่มหลัก */
+    flex: 1 1 100%;
+  }
+}
 
 /* Dynamic Inputs */
 .dynamic-inputs {
@@ -1018,6 +1058,7 @@ input  { font-family: var(--font-main); }
   left: 20px;         /* ห่างจากขอบซ้าย 20px */
   z-index: 9999;      /* อยู่ชั้นบนสุด */
 
+
   /* ตกแต่งให้ดูเป็นปุ่มลับๆ หรือปุ่มตั้งค่า */
   background: rgba(0, 0, 0, 0.3); /* มืดนิดๆ จะได้ไม่กวนสายตา */
   backdrop-filter: blur(5px);
@@ -1144,4 +1185,42 @@ input  { font-family: var(--font-main); }
   0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
   50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.5); }
   100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
+}
+
+/* ปุ่มเพิ่มคนตอนตั้งค่า */
+.add-btn-small {
+    /* 🎨 สีและพื้นหลัง: สีเขียวมรกตอ่อนๆ (Emeral) เพื่อให้เด่นบนพื้นหลังมืด */
+    background-color: #10b981; 
+    color: white; /* ตัวหนังสือสีขาว */
+    
+    /* 📐 ขนาดและระยะห่าง */
+    padding: 6px 12px;
+    font-size: 0.85rem; /* ตัวเล็กหน่อย เพื่อไม่ให้แย่งความสนใจจากชื่อทีม */
+    font-weight: 600; /* ตัวหนานิดนึง */
+    
+    /* 💫 ขอบและเอฟเฟกต์ */
+    border: none;
+    border-radius: 6px; /* ขอบมนเล็กน้อยดูทันสมัย */
+    cursor: pointer;
+    
+    /* ✨ การจัดวางองค์ประกอบภายใน (ถ้ามีไอคอน + สปัน) */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px; /* ระยะห่างระหว่าง + กับ "เพิ่ม" */
+    
+    /* 🚀 การเปลี่ยนสีแบบนุ่มนวล (Transition) */
+    transition: all 0.2s ease-in-out;
+}
+
+/* เอฟเฟกต์เวลาเอาเมาส์วาง (Hover) */
+.add-btn-small:hover {
+    background-color: #059669; /* สีเขียวที่เข้มขึ้นเล็กน้อย */
+    transform: translateY(-1px); /* ลอยขึ้นมานิดนึงเพื่อให้รู้ว่ากดได้ */
+}
+
+/* เอฟเฟกต์เวลาคลิก (Active) */
+.add-btn-small:active {
+    transform: translateY(0px); /* กลับลงมาที่เดิม */
+    background-color: #047857; /* สีเขียวเข้มสุดตอนกด */
 }
