@@ -79,7 +79,7 @@ const i18n = {
     allDone:        "ประเมินครบทุกทีมแล้ว!",
     summaryTitle:   "📊 สรุปผลการประเมิน",
     swipeHint:      "← ปัดซ้ายเพื่อดูกราฟสรุป",
-    viewChart:      "ดูกราฟ →",
+    viewChart:      "📈 ดูกราฟ",
     myVotes:        "ผลของฉัน",
     allTeamsChart:  "📈 กราฟสรุปทุกทีม",
     barChart:       "จำนวนคะแนน ผ่าน/ไม่ผ่าน ต่อทีม",
@@ -132,7 +132,7 @@ const i18n = {
     allDone:        "All evaluations complete!",
     summaryTitle:   "📊 Evaluation Summary",
     swipeHint:      "← Swipe left for charts",
-    viewChart:      "View Charts →",
+    viewChart:      "📈 View Charts",
     myVotes:        "My Votes",
     allTeamsChart:  "📈 All Teams Chart",
     barChart:       "Pass / Fail count per Team",
@@ -157,30 +157,50 @@ function getAudioCtx() {
 
 async function playVoteSound() {
   try {
-    // 1. สร้างหรือดึง AudioContext เดิมมาใช้
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
 
-    // 2. เบราว์เซอร์ส่วนใหญ่จะบล็อกเสียงจนกว่าจะมีการกดปุ่ม (ต้อง Resume)
     if (audioCtx.state === 'suspended') {
       await audioCtx.resume();
     }
 
-    // 3. สร้างระบบเสียง (Oscillator + Gain Node)
-    const gainNode = audioCtx.createGain();
-    const oscillator = audioCtx.createOscillator();
+    const now = audioCtx.currentTime;
 
-    gainNode.connect(audioCtx.destination);
-    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+    // --- ส่วนที่ 1: เสียงเบส (Deep Impact) ---
+    // สร้างเสียงทุ้มต่ำเพื่อความหนักแน่นแบบในหนัง
+    const bassGain = audioCtx.createGain();
+    const bassOsc = audioCtx.createOscillator();
+    
+    bassGain.connect(audioCtx.destination);
+    bassGain.gain.setValueAtTime(0.6, now); // เพิ่มความดังขึ้น
+    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5); // ลากเสียงยาวขึ้นนิดนึง
 
-    oscillator.type = 'sine'; // เสียงนุ่มๆ
-    oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
-    oscillator.connect(gainNode);
+    bassOsc.type = 'triangle'; // ใช้ triangle เพื่อให้เสียงมีความหนา
+    bassOsc.frequency.setValueAtTime(80, now); // ความถี่ต่ำ (เสียงเบส)
+    bassOsc.frequency.exponentialRampToValueAtTime(40, now + 0.5); // เสียงค่อยๆ ต่ำลง (Drop)
+    bassOsc.connect(bassGain);
 
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + 0.2);
+    // --- ส่วนที่ 2: เสียงกระทบ (High Click) ---
+    // สร้างเสียง "กริ๊ก" เพื่อให้ดูเหมือนการกดปุ่มจริงๆ
+    const clickGain = audioCtx.createGain();
+    const clickOsc = audioCtx.createOscillator();
+    
+    clickGain.connect(audioCtx.destination);
+    clickGain.gain.setValueAtTime(0.3, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+    clickOsc.type = 'square'; // ใช้ square เพื่อความคมชัด
+    clickOsc.frequency.setValueAtTime(800, now);
+    clickOsc.connect(clickGain);
+
+    // เริ่มและหยุดพร้อมกัน
+    bassOsc.start(now);
+    bassOsc.stop(now + 0.5);
+    
+    clickOsc.start(now);
+    clickOsc.stop(now + 0.1);
+
   } catch (e) {
     console.error("Audio Error:", e);
   }
@@ -1147,7 +1167,7 @@ function buildMyVotesTable(allVotes) {
     }).join('');
 
     row.innerHTML = `
-      <div class="vote-row-team">🏆 ${teamName}</div>
+      <div class="vote-row-team">Team: ${teamName}</div>
       <div class="vote-row-rounds">${roundBadges}</div>
     `;
     container.appendChild(row);
