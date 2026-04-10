@@ -793,14 +793,31 @@ function restoreSession() {
 
 /* ADMIN — เปิด/ปิด Admin Panel */
 function openAdmin() {
-  showScreen('screen-admin');
-  if (typeof renderAdminInputs === 'function') {
-    renderAdminInputs();
+  // 1. ถามรหัสผ่านก่อนเข้าถึงหน้า Admin
+  const password = prompt("กรุณากรอกรหัสผ่านผู้ดูแลระบบ (Admin Password):");
+
+  // 2. ตรวจสอบรหัสผ่าน
+  if (password === "Admin1219") {
+    // ✅ ถ้ารหัสถูกต้อง ให้รัน Logic เดิมทั้งหมด
+    showScreen('screen-admin');
+    
+    if (typeof renderAdminInputs === 'function') {
+      renderAdminInputs();
+    }
+    
+    if (typeof updateAdminStatus === 'function') {
+      updateAdminStatus();
+    }
+    
+    // เลื่อนหน้าจอขึ้นบนสุดเพื่อให้เห็นเมนูตั้งค่าชัดเจน
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    console.log("🔐 Admin Access Granted");
+  } 
+  else if (password !== null) {
+    // ❌ ถ้ารหัสผิด (และไม่ได้กด Cancel) ให้แจ้งเตือน
+    alert("❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
   }
-  if (typeof updateAdminStatus === 'function') {
-    updateAdminStatus();
-  }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function closeAdmin() {
@@ -1562,9 +1579,7 @@ function renderDemoMode() {
 
 document.addEventListener('DOMContentLoaded', init);
 
-/* ============================================================
-    🏠 GO HOME - ย้อนกลับไปหน้าเลือกกรรมการ
-   ============================================================ */
+/* GO HOME */
 function goHome() {
   // ถามเพื่อความแน่ใจก่อนออกจากหน้าตัดสิน
   const confirmMsg = currentLang === 'th' ? 
