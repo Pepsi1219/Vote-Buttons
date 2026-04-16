@@ -166,7 +166,18 @@ input  { font-family: var(--font-main); }
 .logo-icon {
   font-size: 56px;
   animation: float 3s ease-in-out infinite;
-  filter: drop-shadow(0 0 20px rgba(59,130,246,0.5));
+  filter: drop-shadow(0 0 15px var(--clr-accent));
+  
+  transition: filter 0.3s ease;
+}
+
+body.light-mode .logo-icon {
+  filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.65));
+}
+
+body.light-mode .logo-icon:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  transition: filter 0.2s ease;
 }
 
 @keyframes float {
@@ -177,11 +188,17 @@ input  { font-family: var(--font-main); }
 .setup-title {
   font-size: 2.2rem;
   font-weight: 900;
-  background: linear-gradient(135deg, #f1f5f9, #3b82f6, #10b981);
+  background: linear-gradient(135deg, 
+    var(--clr-text) 0%, 
+    var(--clr-accent) 50%, 
+    var(--clr-accent-secondary, #10b981) 100%
+  );
+  
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
+  transition: all 0.3s ease; 
 }
 
 .setup-subtitle {
