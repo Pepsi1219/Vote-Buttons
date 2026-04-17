@@ -23,17 +23,17 @@
     <div class="setup-container">
       <div class="setup-header">
         <button id="btn-theme-toggle" class="icon-btn" aria-label="Toggle Theme" onclick="toggleTheme()">
-      <span id="theme-icon">🌙</span>
-      </button>
+  <span class="theme-icon">🌙</span>
+</button>
     
       <button id="btn-settings-setup" class="icon-btn" aria-label="Settings" onclick="openAdmin()">
         ⚙️
       </button>
     </div>
       
-      <button id="btn-lang" class="icon-btn" aria-label="Toggle Language" onclick="toggleLanguage()">
-          <span id="lang-label">EN</span>
-        </button>
+      <button class="btn-lang-style icon-btn" aria-label="Toggle Language" onclick="toggleLanguage()">
+  <span class="lang-label-text">EN</span>
+</button>
 
       
       <div class="setup-logo">
@@ -66,15 +66,24 @@
       </div>
 
       <div class="top-bar-actions">
-        <button id="btn-home" class="icon-btn" onclick="goHome()"><span>🏠</span>
-        </button>
-        
-        <button id="btn-lang" class="icon-btn" aria-label="Toggle Language" onclick="toggleLanguage()">
-          <span id="lang-label">EN</span>
-        </button>
-        
+      <button class="btn-lang-style icon-btn" onclick="toggleLanguage()">
+                <span id="lang-label">EN</span>
+        </button> 
       </div>
     </div>
+
+    <button id="btn-floating-home" class="floating-home-btn" onclick="goHome()">
+  <span>🏠</span>
+</button>
+
+    <button class="floating-theme-btn" aria-label="Toggle Theme" onclick="toggleTheme()">
+  <span class="theme-icon">🌙</span>
+</button>
+
+    <a href="ShopfloorChecklist.pdf" target="_blank" class="floating-pdf-btn" aria-label="Open Guide">
+    <span class="pdf-icon">📖</span>
+  </a>
+
 
     <div class="progress-bar-wrap">
       <div id="progress-bar" class="progress-bar"></div>
