@@ -1,3 +1,7 @@
+// ป้องกันไม่ให้แอปเด้งกลับหน้าแรกตอนที่กรรมการเพิ่งเปิดแอปครั้งแรกสุด
+let isFirstSettingsLoad = true;
+
+
 'use strict';
 
 // 1. Firebase Configuration
@@ -276,6 +280,8 @@ function init() {
   }
 }
 
+
+
 function initFirebase() {
   // 1. ป้องกันการ Initialize ซ้ำ (กรณี Refresh หรือ Hot Reload)
   if (!firebase.apps.length) {
@@ -290,7 +296,34 @@ function initFirebase() {
     if (doc.exists) {
       settings = doc.data();
       renderJudgeList(); // วาดรายชื่อกรรมการในหน้าแรก
+      
       if (isAdminOpen()) renderAdminInputs(); // ถ้าหน้า Admin เปิดอยู่ให้วาด Input ใหม่
+
+      // 🚨 โลจิกใหม่: ดึงทุกคนกลับไปหน้าแรกเมื่อแอดมินกด Save การตั้งค่าใหม่
+      if (!isFirstSettingsLoad) {
+        // ตรวจสอบว่ามีคนล็อกอินอยู่ (currentJudge ไม่ว่าง) และ หน้าจอที่เปิดอยู่ ไม่ใช่หน้า Admin
+        if (typeof currentJudge !== 'undefined' && currentJudge !== null && !isAdminOpen()) {
+          
+          // 1. ล้างข้อมูลกรรมการในแรมและ LocalStorage
+          currentJudge = null;
+          localStorage.removeItem('voter_session');
+          
+          // 2. ดึงกลับหน้าแรก
+          showScreen('screen-setup');
+          
+          // 3. แจ้งเตือนให้กรรมการรู้ตัว (รองรับ 2 ภาษา)
+          const lang = (typeof currentLang !== 'undefined') ? currentLang : 'th';
+          const msg = lang === 'th' 
+            ? '⚠️ แอดมินตั้งค่าระบบใหม่ กรุณาเลือกชื่อเพื่อเข้าสู่ระบบอีกครั้ง' 
+            : '⚠️ System settings updated. Please select your name again.';
+            
+          showToast(msg, 'info');
+        }
+      }
+      
+      // เปลี่ยนสถานะเพื่อบอกว่าผ่านการโหลดครั้งแรกมาแล้ว จะได้ไม่ทำงานตอนเพิ่งเปิดแอป
+      isFirstSettingsLoad = false;
+
     } else {
       console.warn("⚠️ ไม่พบข้อมูลการตั้งค่าใน Firestore (config/settings)");
       renderJudgeListEmpty();
@@ -310,7 +343,7 @@ function initFirebase() {
       isCompleted: false
     };
     
-    // สำคัญ: เมื่อสถานะเปลี่ยน (เช่น Admin กดข้ามทีม) ให้ทำงานทันที
+    // สำคัญ: เมื่อสถานะเปลี่ยน (เช่น Admin กดข้ามทีม หรือเปิด/ปิดโหวต) ให้ทำงานทันที
     handleSessionChange();
   }, error => {
     console.error("❌ Firestore Session Error:", error);
@@ -1069,7 +1102,7 @@ async function saveSettings() {
   }
 
   try {
-    // ใช้ .set เพื่อให้สร้างไฟล์ใหม่ได้เสมอถ้ายังไม่มี
+    // 1. บันทึก Settings ลง Firestore
     await db.collection('config').doc('settings').set({ 
       judges, 
       teams, 
@@ -1077,11 +1110,24 @@ async function saveSettings() {
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     
+    // 2. 💥 สำคัญ: รีเซ็ต Session ให้กลับไปจุดเริ่มต้นด้วย
+    // เพื่อดึงสถานะกลับมาเป็น รอบที่ 1, ทีมที่ 1 และปิดการโหวตอยู่
+    await db.collection('config').doc('session').set({
+      currentRoundIndex: 0,
+      currentTeamIndex: 0,
+      isActive: false,
+      isCompleted: false,
+      forceResetAt: firebase.firestore.FieldValue.serverTimestamp() // สร้างจุดสังเกต
+    });
+    
     // พยายามดึงค่าใหม่เข้าตัวแปร local ทันทีหลังบันทึก
     settings = { judges, teams, rounds }; 
     
-    showToast(t('settingsSaved'), 'info');
-    console.log("✅ Settings saved successfully");
+    // แสดงข้อความ (ถ้ามี i18n ก็ใช้ t('settingsSaved') ได้เลย)
+    const msg = (typeof t === 'function') ? t('settingsSaved') : 'บันทึกการตั้งค่าและรีเซ็ตระบบเรียบร้อย';
+    showToast(msg, 'info');
+    console.log("✅ Settings & Session saved successfully");
+    
   } catch (error) {
     console.error("❌ Save Settings Error:", error);
     showToast("ไม่สามารถบันทึกได้: " + error.message, "fail");
