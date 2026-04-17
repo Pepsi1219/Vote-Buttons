@@ -257,12 +257,26 @@ function applyTranslations() {
 
 // ฟังก์ชันสลับภาษา — ถูกเรียกจาก onclick ใน HTML
 function toggleLanguage() {
+  // 1. สลับตัวแปรภาษา
   currentLang = currentLang === 'th' ? 'en' : 'th';
+
+  // 2. 🚀 อัปเดตข้อความบนปุ่มเปลี่ยนภาษาทุกปุ่มในแอป
+  // ถ้าตอนนี้เป็นภาษาไทย ปุ่มจะโชว์คำว่า 'EN' (เพื่อให้กดเปลี่ยนเป็นอังกฤษ)
+  const labelText = currentLang === 'th' ? 'EN' : 'TH';
+  const langLabels = document.querySelectorAll('.lang-label-text');
+  langLabels.forEach(label => {
+    label.textContent = labelText;
+  });
+
+  // 3. เรียกฟังก์ชันแปลภาษาหลัก
   applyTranslations();
-  // อัพเดต dynamic content ที่ render แล้ว
+
+  // 4. อัพเดต dynamic content ที่ render แล้ว
   if (sessionData) updateJudgeScreen();
   if (sessionData && settings) updateStatusBanner();
-  showToast(currentLang === 'th' ? 'ภาษาไทย' : 'English', 'info');
+  
+  // 5. แจ้งเตือน Pop-up ด้านล่าง
+  showToast(currentLang === 'th' ? 'เปลี่ยนเป็นภาษาไทย' : 'Switched to English', 'info');
 }
 
 /* FIREBASE & INITIALIZATION */
@@ -1679,33 +1693,42 @@ window.goHome = goHome;
 // Chanhe mode 
 function toggleTheme() {
   const body = document.body;
-  const icon = document.getElementById('theme-icon');
   
-  // ใส่ Animation ให้ไอคอน
-  icon.classList.remove('rotate-icon');
-  void icon.offsetWidth; // Trigger reflow เพื่อให้รัน animation ซ้ำได้
-  icon.classList.add('rotate-icon');
+  // 1. หาไอคอนทั้งหมดที่มี class="theme-icon" (จะได้มาทั้งหน้าแรกและหน้าโหวต)
+  const icons = document.querySelectorAll('.theme-icon');
+  let newIconText = '';
 
+  // 2. ตรวจสอบและสลับโหมด
   if (body.classList.contains('light-mode')) {
-    // เปลี่ยนเป็น Dark Mode
     body.classList.remove('light-mode');
-    icon.textContent = '🌙';
+    newIconText = '🌙';
     localStorage.setItem('theme', 'dark');
   } else {
-    // เปลี่ยนเป็น Light Mode
     body.classList.add('light-mode');
-    icon.textContent = '☀️';
+    newIconText = '☀️';
     localStorage.setItem('theme', 'light');
   }
+
+  // 3. วนลูปสั่งให้ "ทุกไอคอน" เล่น Animation และเปลี่ยนรูป
+  icons.forEach(icon => {
+    icon.classList.remove('rotate-icon');
+    void icon.offsetWidth; // Trigger reflow เพื่อให้รัน animation ซ้ำได้
+    icon.classList.add('rotate-icon');
+    icon.textContent = newIconText;
+  });
 }
 
 // เช็คธีมตอนโหลดหน้าเว็บ
 window.addEventListener('DOMContentLoaded', () => {
   const savedTheme = localStorage.getItem('theme');
-  const icon = document.getElementById('theme-icon');
+  // หาไอคอนทั้งหมดเช่นกัน
+  const icons = document.querySelectorAll('.theme-icon');
   
   if (savedTheme === 'light') {
     document.body.classList.add('light-mode');
-    if (icon) icon.textContent = '☀️';
+    // เปลี่ยนรูปทุกไอคอนเป็นพระอาทิตย์ตั้งแต่เปิดแอป
+    icons.forEach(icon => {
+      icon.textContent = '☀️';
+    });
   }
 });
