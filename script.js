@@ -10,7 +10,7 @@ const firebaseConfig = {
   appId: "1:910772982997:web:2bb50708d47710c420be5c",
   measurementId: "G-D71WMNXZ8F"
 };
-// 2. Global State (ประกาศตัวแปรเพียงครั้งเดียว)
+// 2. Global State
 if (typeof db === 'undefined') {
   var db; 
 }
@@ -26,16 +26,15 @@ let votesUnsubscribe = null;
 let audioCtx = null;
 
 function checkAuth() {
-  // ลองดึงข้อมูลจากความจำเบราว์เซอร์
+  // ดึงข้อมูลจากความจำเบราว์เซอร์
   const savedVoter = localStorage.getItem('voter_session');
-  
   if (savedVoter) {
     currentJudge = JSON.parse(savedVoter);
     console.log("Found existing session for:", currentJudge.name);
   } else {
     currentJudge = null;
     console.log("No session found. Forcing Setup Screen.");
-    // 🛡️ บังคับไปหน้าแรกทันที
+    // บังคับไปหน้าแรก
     showScreen('screen-setup'); 
   }
 }
@@ -96,6 +95,17 @@ const i18n = {
     homeText: "กลับหน้าแรก",
     confirmJudgeName: "ยืนยันว่าคุณคือ: ",
     warningNoEdit: "\n\n*หากกดยืนยันแล้ว คุณจะไม่สามารถแก้ไขชื่อได้ภายหลัง",
+    confirmPass: 'ยืนยันการให้ผล "ผ่าน"',
+    confirmFail: 'ยืนยันการให้ผล "ไม่ผ่าน"',
+    modalReview: "กรุณาทบทวนเกณฑ์การประเมินดังต่อไปนี้:",
+    chkProcess: "ขั้นตอนการทำงานถูกต้อง",
+    chkPic: "บุคคลที่รับผิดชอบได้รับการระบุอย่างชัดเจนและถูกต้อง",
+    chkOutput: "ผลลัพธ์ของแต่ละกระบวนการถูกต้อง",
+    chkSystem: "ระบบถูกใช้งานอย่างถูกต้องในทุกขั้นตอนของกระบวนการ",
+    note: "หมายเหตุ:",
+    modalWarningDesc: 'ผู้รับการประเมินต้องปฏิบัติได้ถูกต้องครบถ้วนทั้ง 4 หัวข้อ จึงจะพิจารณาให้ผลเป็น "ผ่าน"',
+    cancelBtn: "ยกเลิก",
+    confirmVoteBtn: "ยืนยันการโหวต"
   },
   en: {
     appTitle:       "Shopfloor Best Practice Competition",
@@ -151,6 +161,17 @@ const i18n = {
     homeText: "Home",
     confirmJudgeName: "Confirm that you are: ",
     warningNoEdit: "\n\n*Once confirmed, you cannot change your name later.",
+    confirmPass: 'Confirm "Pass" Result',
+    confirmFail: 'Confirm "Fail" Result',
+    modalReview: "Please review the following evaluation criteria:",
+    chkProcess: "Work process is correct",
+    chkPic: "The responsible person is clearly identified and correct",
+    chkOutput: "Results of the steps are correct",
+    chkSystem: "The system is used correctly at each step of the process",
+    note: "Note:",
+    modalWarningDesc: 'The evaluatee must meet all 4 criteria correctly to be considered as "Pass"',
+    cancelBtn: "Cancel",
+    confirmVoteBtn: "Confirm Vote"
   }
 };
 
@@ -628,7 +649,11 @@ async function checkAllVoted(voteData, judgeCount, ri, ti) {
 }
 
 /* CAST VOTE — กรรมการกดปุ่ม */
-async function castVote(choice) {
+// ตัวแปรสำหรับเก็บค่าผลโหวตชั่วคราวก่อนกดยืนยันใน Popup
+let pendingVoteType = null;
+
+/* 1. CAST VOTE — กรรมการกดปุ่ม (เปลี่ยนมาเปิด Popup ตรวจสอบก่อน) */
+function castVote(choice) {
   // 1. ตรวจสอบสิทธิ์และสถานะการเปิดรอบ
   if (!currentJudge || !sessionData?.isActive) return;
   
@@ -637,7 +662,48 @@ async function castVote(choice) {
     return;
   }
 
-  // เล่นเสียงประกอบการกด (ถ้ามี)
+  // 2. เก็บค่าโหวตไว้ชั่วคราว
+  pendingVoteType = choice;
+
+  // 3. เตรียมหน้าตา Popup
+  const titleEl = document.getElementById('modal-vote-title');
+  const confirmBtn = document.getElementById('btn-confirm-vote');
+  
+  // ดึงภาษาปัจจุบัน
+  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'th';
+
+  if (choice === 'pass') {
+    // ใช้ fallback ภาษาไทยเผื่อไว้กรณีที่หา i18n ไม่เจอ
+    const txt = (i18n && i18n[lang] && i18n[lang].confirmPass) ? i18n[lang].confirmPass : 'ยืนยันการให้ผล "ผ่าน"';
+    titleEl.innerHTML = `🟢 ${txt}`;
+    confirmBtn.style.background = '#15803d'; // สีเขียว
+  } else {
+    const txt = (i18n && i18n[lang] && i18n[lang].confirmFail) ? i18n[lang].confirmFail : 'ยืนยันการให้ผล "ไม่ผ่าน"';
+    titleEl.innerHTML = `🔴 ${txt}`;
+    confirmBtn.style.background = '#dc2626'; // สีแดง
+  }
+
+  // 4. เปิด Popup
+  document.getElementById('vote-confirm-modal').style.display = 'flex';
+}
+
+/* 2. CLOSE MODAL — ปิด Popup (กรณีกรรมการเปลี่ยนใจ/ยกเลิก) */
+function closeVoteModal() {
+  document.getElementById('vote-confirm-modal').style.display = 'none';
+  pendingVoteType = null; // ล้างค่าทิ้ง
+}
+
+/* 3. EXECUTE VOTE — ทำงานเมื่อกรรมการกดยืนยันใน Popup (โค้ด Firebase เดิมของคุณ) */
+async function executeVote() {
+  // ถ้าไม่มีค่าโหวตค้างไว้ ให้หยุดทำงาน
+  if (!pendingVoteType) return;
+  
+  const choice = pendingVoteType;
+
+  // 1. ปิด Popup ทันทีที่กดยืนยัน
+  closeVoteModal();
+
+  // 2. เล่นเสียงประกอบการกด (ย้ายมาเล่นตอนกดยืนยันสำเร็จ)
   if (typeof playVoteSound === 'function') playVoteSound();
 
   const { currentRoundIndex: ri, currentTeamIndex: ti } = sessionData;
@@ -649,27 +715,24 @@ async function castVote(choice) {
   try {
     const voteRef = db.collection('votes').doc(slotKey);
 
-    // 2. 🚀 บันทึกคะแนนลง Firestore (ใช้ merge เพื่อรวมคะแนนกรรมการทุกคน)
+    // 3. 🚀 บันทึกคะแนนลง Firestore (ใช้ merge เพื่อรวมคะแนนกรรมการทุกคน)
     await voteRef.set({
       [currentJudge.index]: choice
     }, { merge: true });
 
-    // 3. อัปเดตสถานะในเครื่อง
+    // 4. อัปเดตสถานะในเครื่อง
     myVoteForCurrentSlot = choice;
 
-    // 📣 แสดงข้อความแจ้งเตือนให้ตรงกับ i18n ที่คุณตั้งค่าไว้
-    // (เลือกใช้ youVotedPass หรือ youVotedFail ตามปุ่มที่กด)
+    // 5. แสดงข้อความแจ้งเตือนให้ตรงกับ i18n
     const msg = choice === 'pass' 
       ? t('youVotedPass', teamName) 
       : t('youVotedFail', teamName);
     
     showToast(msg, choice);
 
-    // 4. ✅ อัปเดตหน้าจอทันทีเพื่อให้ปุ่มเปลี่ยนเป็นสีเทาหรือโชว์สถานะรอ
+    // 6. ✅ อัปเดตหน้าจอทันทีเพื่อให้ปุ่มเปลี่ยนเป็นสีเทาหรือโชว์สถานะรอ
     if (typeof updateJudgeScreen === 'function') updateJudgeScreen();
 
-    // หมายเหตุ: เราตัดส่วนการเช็คจำนวนโหวตและการบันทึก completedSessions ออกจากที่นี่
-    // เพื่อให้ checkAllVoted ใน Listener เป็นผู้จัดการเพียงจุดเดียว ป้องกันปัญหาคะแนนไม่ครบ
     console.log(`✅ Vote saved for ${currentJudge.name} on slot ${slotKey}`);
 
   } catch (error) {
@@ -1543,99 +1606,17 @@ function animateTeamChange() {
 
 
 
-/* INIT — เริ่มต้นระบบ */
-function init() {
-  applyTranslations();
-  if (typeof initSummarySwipe === 'function') {
-    initSummarySwipe();
-  }
 
-  if (!firebaseConfig || firebaseConfig.apiKey === 'YOUR_API_KEY') {
-    console.warn('⚠️ กรุณาตั้งค่า firebaseConfig ให้ถูกต้องก่อนใช้งาน');
-    if (typeof renderDemoMode === 'function') renderDemoMode();
-    return;
-  }
-  initFirebase();
-
-  if (restoreSession()) {
-    // ถ้าเคยเลือกชื่อไว้แล้ว ให้พาไปหน้าตัดสิน
-    showScreen('screen-judge');
-
-  } else {
-    // ถ้าเป็นผู้ใช้ใหม่ ให้ไปหน้าเลือกชื่อกรรมการ
-    showScreen('screen-setup');
-  }
-}
-
-/* DEMO MODE — แสดงผลโดยไม่ต้องใช้ Firebase (เพื่อ preview) */
-function renderDemoMode() {
-  // 1. จำลองข้อมูล Settings และ Session
-  settings = {
-    judges: ['สมชาย', 'สมหญิง', 'สมศักดิ์'],
-    teams:  ['ทีม Alpha', 'ทีม Beta', 'ทีม Gamma'],
-    rounds: ['ช่วงที่ 1: ความถูกต้อง', 'ช่วงที่ 2: ความคิดสร้างสรรค์']
-  };
-  
-  sessionData = {
-    currentRoundIndex: 0,
-    currentTeamIndex:  0,
-    isActive:          false, // ใน Demo จะล็อกปุ่มไว้ก่อน
-    isCompleted:       false
-  };
-
-  // 2. แสดงหน้าแรกและวาดรายชื่อกรรมการจำลอง
-  showScreen('screen-setup');
-  renderJudgeList();
-
-  /**
-   * 🛠️ Override selectJudge เฉพาะตอนอยู่ใน Demo
-   * เพื่อให้กดเลือกกรรมการแล้วเปลี่ยนหน้าได้โดยไม่ต้องรอ Firebase
-   */
-  window.selectJudge = function(index, name) {
-    currentJudge = { index, name };
-    
-    // เปลี่ยนหน้าไปที่หน้าตัดสิน
-    showScreen('screen-judge');
-    
-    // วาดข้อมูลจำลองลงในหน้าจอตัดสิน
-    const teamEl  = document.getElementById('current-team-name');
-    const roundEl = document.getElementById('current-round-name');
-    const countEl = document.getElementById('judge-count-text');
-    const statusEl = document.getElementById('status-text');
-
-    if (teamEl)  teamEl.textContent = settings.teams[0];
-    if (roundEl) roundEl.textContent = settings.rounds[0];
-    if (countEl) countEl.textContent = '0 / 3';
-
-    // แสดงสถานะว่ากำลังรอแอดมิน (เพราะ isActive = false)
-    if (statusEl) statusEl.textContent = t('waitingActive');
-    
-    // อัปเดตแถบสีสถานะ
-    updateStatusBanner();
-
-    showToast(`✅ ${currentLang === 'th' ? 'เข้าสู่ระบบเป็น' : 'Logged in as'} ${name}`, 'info');
-    
-    console.warn('⚠️ คุณอยู่ใน Demo Mode ข้อมูลจะไม่ถูกบันทึกลงฐานข้อมูลจริง');
-  };
-
-  console.info('🚀 Vote Buttons — Demo Mode Activated');
-}
-
-document.addEventListener('DOMContentLoaded', init);
 
 /* GO HOME */
 function goHome() {
-  // ถามเพื่อความแน่ใจก่อนออกจากหน้าตัดสิน
   const confirmMsg = currentLang === 'th' ? 
     "คุณต้องการออกจากหน้านี้เพื่อเลือกชื่อกรรมการใหม่ใช่หรือไม่?" : 
     "Are you sure you want to go back to the setup screen?";
 
   if (confirm(confirmMsg)) {
-    // 1. ล้าง session ในหน่วยความจำ (ถ้ามี)
     currentJudge = null;
     localStorage.removeItem('voter_session'); 
-
-    // 2. เปลี่ยนหน้ากลับไปหน้าแรก
     showScreen('screen-setup');
     
     // 3. แจ้งเตือนเล็กน้อย
@@ -1646,10 +1627,10 @@ function goHome() {
   }
 }
 
-// 🔥 สำคัญ: ต้องเพิ่มบรรทัดนี้ไว้ท้ายไฟล์เพื่อให้ HTML รู้จักฟังก์ชัน
 window.goHome = goHome;
 
 
+// Chanhe mode 
 function toggleTheme() {
   const body = document.body;
   const icon = document.getElementById('theme-icon');
