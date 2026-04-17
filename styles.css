@@ -342,16 +342,15 @@ body.light-mode .logo-icon:hover {
 }
 
 .current-team-label {
-  font-size: 0.65rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
   color: var(--clr-text-muted);
 }
 
 .current-team-name {
-  font-size: 1.15rem;
-  font-weight: 800;
+  font-size: 1.95rem;
+  font-weight: 900;
   color: var(--clr-text);
   white-space: nowrap;
   overflow: hidden;
@@ -359,9 +358,9 @@ body.light-mode .logo-icon:hover {
 }
 
 .current-round-name {
-  font-size: 0.78rem;
+  font-size: 1.25rem;
   color: var(--clr-accent);
-  font-weight: 500;
+  font-weight: 900;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -496,7 +495,6 @@ body.light-mode .logo-icon:hover {
 /* --- Vote Buttons --- */
 .vote-btn {
   flex: 1;
-  width: calc(100% - 10px); /* ลดขนาดความกว้างนิดนึง ไม่ให้ชนขอบจอ */
   border: none;
   position: relative;
   overflow: visible; /* เปลี่ยนจาก hidden เพื่อให้เงาฐานปุ่มไม่ขาด */
@@ -505,10 +503,12 @@ body.light-mode .logo-icon:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 24px; /* เพิ่มความมนให้ดูทันสมัย */
+  border-radius: 55px; /* เพิ่มความมนให้ดูทันสมัย */
   margin: 10px 0;
-  margin-left: auto;
-  margin-right: auto;
+  margin-left: 10px;   /* ขยับจากขอบซ้าย 20px */
+  margin-right: 10px;  /* ขยับจากขอบขวา 20px */
+  margin-top: 20px;   /* ขยับจากขอบซ้าย 20px */
+  margin-bottom: 20px;   /* ขยับจากขอบซ้าย 20px */
   
   /* หัวใจของ 3D: ใช้เงาแข็งเป็นฐานปุ่ม (Thickness) */
   transition: all 0.1s ease; /* เวลากดต้องตอบสนองไว */
@@ -519,6 +519,7 @@ body.light-mode .logo-icon:hover {
   background: linear-gradient(160deg, var(--clr-pass) 0%, var(--clr-pass-dark) 100%);
   /* สร้างฐานปุ่มสีเขียวเข้ม */
   box-shadow: 0 8px 0 #15803d, 0 15px 25px rgba(0, 0, 0, 0.3);
+
 }
 
 .btn-fail {
@@ -540,16 +541,16 @@ body.light-mode .logo-icon:hover {
 
 /* ปรับไอคอนให้ดูมีพลัง */
 .vote-icon {
-  font-size: clamp(3rem, 12vw, 4.5rem); /* ลดขนาดลงนิดนึงเพื่อความสมดุล */
+  font-size: clamp(8rem, 12vw, 4.5rem);
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  text-shadow: 0 20px 10px rgba(0,0,0,0.3);
   transition: transform var(--transition-bounce);
 }
 
 .vote-label {
   font-size: clamp(1.4rem, 6vw, 2.2rem);
-  font-weight: 900;
+  font-weight: 1000;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -1144,7 +1145,7 @@ body.light-mode .swipe-btn {
 ::-webkit-scrollbar-thumb { background: var(--clr-border); border-radius: 2px; }
 
 /* ปุ่มเปลี่ยนภาษาไปอยู่ขวาบน */
-#btn-lang {
+.btn-lang-style {
   position: fixed;
   top: 20px;
   right: 20px;
@@ -1253,6 +1254,126 @@ body.light-mode #btn-theme-toggle {
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
+
+/* --- ปุ่มเปิดคู่มือ PDF แบบลอย (Floating PDF Button) --- */
+.floating-pdf-btn {
+  position: absolute; 
+  z-index: 9999;
+  
+  /* 📍 การกำหนดตำแหน่ง: ให้อยู่เหนือปุ่มเปลี่ยนธีม */
+  right: 16px; 
+  top: calc(70px + env(safe-area-inset-bottom)); 
+  
+  /* 🎨 รูปร่างหน้าตา */
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  
+  /* สีฟ้าเด่นๆ ให้รู้ว่าเป็นปุ่มข้อมูล/ช่วยเหลือ */
+  background: #3b82f6; 
+  color: white; /* สีไอคอน */
+  text-decoration: none; /* เอาขีดเส้นใต้ที่เป็นค่าเริ่มต้นของลิงก์ออก */
+  font-size: 1.5rem;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); /* เงาสีฟ้าเรืองแสงนิดๆ */
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* เอฟเฟกต์ตอนกดปุ่ม */
+.floating-pdf-btn:active {
+  transform: scale(0.85);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* หากเป็น Dark Mode ไม่ต้องเปลี่ยนอะไรมาก แต่ปรับเงาให้เข้มขึ้นนิดนึงได้ */
+body.dark-mode .floating-pdf-btn {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+}
+
+
+/* --- ปุ่ม Theme แบบลอย (Floating Theme Button) --- */
+.floating-theme-btn {
+  position: absolute; /* ลอยเป็นอิสระภายในหน้า Judge */
+  z-index: 9999;
+  
+  /* 📍 การกำหนดตำแหน่ง (ตอนนี้ตั้งไว้ ขวาล่าง) */
+  right: 70px; 
+  Top: calc(15px + env(safe-area-inset-bottom)); 
+  
+  /* 🎨 รูปร่างปุ่ม (ก๊อปปี้สไตล์มาจากปุ่ม Home) */
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--clr-surface, #ffffff);
+  border: 1px solid var(--clr-border);
+  font-size: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* เอฟเฟกต์ตอนกดปุ่ม */
+.floating-theme-btn:active {
+  transform: scale(0.85);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* หากเป็น Dark Mode ให้เงาและสีปุ่มเปลี่ยนตาม */
+body.dark-mode .floating-theme-btn {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(8px);
+}
+
+/* --- ปุ่ม Home แบบลอย (Floating Button) --- */
+.floating-home-btn {
+  position: fixed;   /* บังคับลอยติดหน้าจอ */
+  z-index: 9999;     /* ให้อยู่บนสุดเสมอ ไม่โดนอะไรบัง */
+  
+  /* 📍 การกำหนดตำแหน่ง (ปรับแก้ได้ตามต้องการ) */
+  right: 130px; 
+  top: calc(15px + env(safe-area-inset-bottom)); 
+  
+  /* 🎨 รูปร่างหน้าตา */
+  width: 50px;
+  height: 50px;
+  border-radius: 50%; /* ทำให้เป็นวงกลมสมบูรณ์ */
+  background: var(--clr-surface, #ffffff); /* สีพื้นหลังกลมกลืนกับแอป */
+  border: 1px solid var(--clr-border);
+  font-size: 1.5rem;
+  
+  /* เพิ่มเงาให้ดู "ลอย" ขึ้นมาจากพื้นหลังจริงๆ */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+  
+  /* จัดให้อีโมจิอยู่ตรงกลางเป๊ะๆ */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* เอฟเฟกต์ตอนกดปุ่ม */
+.floating-home-btn:active {
+  transform: scale(0.85); /* ยุบตัวลงตอนกด */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* หากเป็น Dark Mode ให้เงาเข้มขึ้นนิดนึง */
+body.dark-mode .floating-home-btn {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(8px);
+}
+
 
 /* ปุ่มโฮมเปลี่ยนสี */
 #btn-home.icon-btn {
