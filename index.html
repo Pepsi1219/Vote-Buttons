@@ -57,16 +57,22 @@
 
   <div id="screen-judge" class="screen">
     <div class="top-bar">
+      
       <div class="top-bar-info">
         <div class="current-team-label" data-i18n="teamLabel">ทีม</div>
         <div id="current-team-name" class="current-team-name">—</div>
         <div id="current-round-name" class="current-round-name">—</div>
+        
       </div>
 
       <div class="top-bar-actions">
         <button id="btn-home" class="icon-btn" onclick="goHome()"><span>🏠</span>
-          <span data-i18n="homeText">กลับหน้าแรก</span>
         </button>
+        
+        <button id="btn-lang" class="icon-btn" aria-label="Toggle Language" onclick="toggleLanguage()">
+          <span id="lang-label">EN</span>
+        </button>
+        
       </div>
     </div>
 
@@ -214,6 +220,53 @@
         </div>
       </div>
     </div>
+
+    <div id="vote-confirm-modal" class="custom-modal-overlay" style="display: none;">
+    <div class="custom-modal-box">
+      <h3 id="modal-vote-title" class="modal-title">ยืนยันผลการตัดสิน</h3>
+      
+      <p class="modal-subtitle" data-i18n="modalReview">กรุณาทบทวนเกณฑ์การประเมินดังต่อไปนี้:</p>
+      
+      <ul class="checklist-box">
+  <li>
+    <span class="check-icon">✓</span>
+    <div class="checklist-item-content">
+      <b>Process:</b> <span data-i18n="chkProcess">Work process is correct</span>
+    </div>
+  </li>
+  
+  <li>
+    <span class="check-icon">✓</span>
+    <div class="checklist-item-content">
+      <b>Pic:</b> <span data-i18n="chkPic">The responsible person is clearly identified and correct</span>
+    </div>
+  </li>
+  
+  <li>
+    <span class="check-icon">✓</span>
+    <div class="checklist-item-content">
+      <b>Output:</b> <span data-i18n="chkOutput">The results of the steps are correct</span>
+    </div>
+  </li>
+  
+  <li>
+    <span class="check-icon">✓</span>
+    <div class="checklist-item-content">
+      <b>System:</b> <span data-i18n="chkSystem">System data entry is complete</span>
+    </div>
+  </li>
+</ul>
+  
+      <div class="modal-warning">
+        ⚠️ <b data-i18n="note">หมายเหตุ:</b> <span data-i18n="modalWarningDesc">ผู้รับการประเมินต้องปฏิบัติได้ถูกต้องครบถ้วนทั้ง 4 หัวข้อ จึงจะพิจารณาให้ผลเป็น <b>"ผ่าน"</b></span>
+      </div>
+  
+      <div class="modal-actions">
+        <button class="modal-btn btn-cancel" onclick="closeVoteModal()" data-i18n="cancelBtn">ยกเลิก</button>
+        <button id="btn-confirm-vote" class="modal-btn btn-confirm" onclick="executeVote()" data-i18n="confirmVoteBtn">ยืนยันการโหวต</button>
+      </div>
+    </div>
+  </div>
 
   <div id="toast" class="toast"></div>
 
