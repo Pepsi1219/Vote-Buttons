@@ -1182,7 +1182,7 @@ body.light-mode #btn-lang {
 /* ปุ่มตั้งค่ามาอยู่ซ้ายล่าง */
 #btn-settings-setup {
   position: fixed;
-  bottom: 15px;
+  bottom: 20px;
   left: 20px;
   z-index: 9999;
 
