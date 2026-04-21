@@ -1213,7 +1213,7 @@ function updateAdminStatus() {
 
 /* RESET ALL  */
 async function resetAll() {
-  if (!confirm("⚠️ ยืนยันการล้างข้อมูล config/session และ config/settings?")) return;
+  if (!confirm("⚠️ ยืนยันการล้างข้อมูล config/session และ config/settings รวมทั้งคะแนน FSK?")) return;
 
   try {
     const batch = db.batch();
@@ -1242,10 +1242,14 @@ async function resetAll() {
     const compSnap = await db.collection('completedSessions').get();
     compSnap.forEach(doc => batch.delete(doc.ref));
 
-    // ยืนยันการทำงาน
+    // 🚀 4. [เพิ่มใหม่] กวาดล้างคะแนนของกรรมการพิเศษ FSK
+    const fskSnap = await db.collection('fskVotes').get();
+    fskSnap.forEach(doc => batch.delete(doc.ref));
+
+    // ยืนยันการทำงานทั้งหมดพร้อมกัน
     await batch.commit();
     
-    showToast("🧹 ล้างข้อมูล config และคะแนนทั้งหมดแล้ว", "info");
+    showToast("🧹 ล้างข้อมูล config และคะแนนทั้งหมดเรียบร้อยแล้ว", "info");
     
     // บังคับรีโหลดเพื่อให้แอปกลับไปหน้า Setup ใหม่
     setTimeout(() => location.reload(), 1000);
@@ -1732,3 +1736,214 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// ฟังก์ชันเปิดหน้า FSK
+let currentFskJudgeName = "";
+
+// รายชื่อกรรมการ FSK 
+const fskJudgeList = ["Jettana Wattanarongkup",
+                      "Katekan Tongthong", 
+                      "Jutatip Kamklan",
+                      "Worada Sanerjai",
+                      "Natthasasi Chotichanawong",
+                      "Pongsathon Sukjarernjit",
+                     ];
+
+// 1. ฟังก์ชันเปิดหน้า FSK
+function openFskScreen() {
+  document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+  document.getElementById('screen-fsk').classList.add('active');
+  
+  // รีเซ็ตหน้าจอ ให้โชว์หน้าเลือกชื่อ และซ่อนหน้าโหวต
+  document.getElementById('fsk-login-area').style.display = 'block';
+  document.getElementById('fsk-content-area').style.display = 'none';
+  
+  // สร้าง Dropdown รายชื่อกรรมการ
+  const select = document.getElementById('fsk-judge-select');
+  select.innerHTML = '<option value="">-- เลื่อนเพื่อเลือกชื่อ --</option>';
+  
+  // ดึงจาก settings.fskJudges ได้ ถ้ามีการตั้งค่าไว้ในระบบ
+  const judges = (settings && settings.fskJudges) ? settings.fskJudges : fskJudgeList;
+  judges.forEach(name => {
+    select.innerHTML += `<option value="${name}">${name}</option>`;
+  });
+}
+
+// 2. ฟังก์ชันตรวจสอบสิทธิ์เมื่อกด "เข้าสู่หน้าประเมิน"
+async function startFskEvaluation() {
+  const selectEl = document.getElementById('fsk-judge-select');
+  const selectedName = selectEl.value;
+
+  if (!selectedName) {
+    alert("กรุณาเลือกชื่อกรรมการก่อนครับ");
+    return;
+  }
+
+  // เปลี่ยนข้อความปุ่มเพื่อบอกว่ากำลังโหลด
+  const btn = document.querySelector('#fsk-login-area .fsk-submit-btn');
+  const oldText = btn.textContent;
+  btn.textContent = "กำลังตรวจสอบข้อมูล...";
+  btn.disabled = true;
+
+  try {
+    // 🚀 เปลี่ยนมาใช้คำสั่งแบบดั้งเดิม ให้ตรงกับโปรเจกต์ของคุณ
+    const fskDocRef = db.collection('fskVotes').doc(selectedName);
+    const fskDocSnap = await fskDocRef.get();
+
+    // เช็คว่าเคยโหวตไปแล้วหรือยัง (สังเกตว่า exists ไม่มีวงเล็บครับ)
+    if (fskDocSnap.exists) {
+      alert(`คุณ ${selectedName} ได้ทำการประเมินและส่งคะแนนไปเรียบร้อยแล้ว ไม่สามารถให้คะแนนซ้ำได้ครับ!`);
+      btn.textContent = oldText;
+      btn.disabled = false;
+      return; // เตะเบรก ไม่ให้เข้าหน้า 1-5
+    }
+
+    // --- ผ่านด่านตรวจสอบ ---
+    currentFskJudgeName = selectedName; // บันทึกชื่อไว้ใช้ตอนส่งคะแนน
+
+    // ซ่อนหน้า Login และโชว์หน้าให้คะแนน
+    document.getElementById('fsk-login-area').style.display = 'none';
+    document.getElementById('fsk-content-area').style.display = 'block';
+    
+    // เรียกฟังก์ชันสร้างปุ่ม 1-5
+    loadFskData(); 
+
+  } catch (error) {
+    console.error("Error checking FSK judge:", error);
+    alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลครับ กรุณาลองใหม่");
+  } finally {
+    // คืนค่าปุ่มกลับมาเหมือนเดิม
+    btn.textContent = oldText;
+    btn.disabled = false;
+  }
+}
+
+// ฟังก์ชันปิดหน้า FSK (กลับไปหน้า Setup)
+function closeFskScreen() {
+  document.querySelectorAll('.screen').forEach(screen => {
+    screen.classList.remove('active');
+  });
+  document.getElementById('screen-setup').classList.add('active');
+}
+
+// 1. ฟังก์ชันดึงข้อมูลมาสร้างหน้าจอ (เรียกใช้ตอนกดเปิดหน้า FSK)
+let fskDraftScores = {};
+
+function loadFskData() {
+  const container = document.getElementById('fsk-content-area');
+  
+  // 1. เช็คว่ามีข้อมูล settings หรือยัง
+  if (!settings || !settings.rounds || !settings.teams) {
+    container.innerHTML = '<div class="setup-hint" style="text-align:center; padding:20px;">กำลังรอข้อมูลจากระบบ หรือยังไม่มีการตั้งค่า...</div>';
+    return;
+  }
+
+  fskDraftScores = {}; // รีเซ็ตคะแนนทุกครั้งที่เปิดหน้า
+  let html = '';
+
+  // 2. ลูปสร้างกล่องตามจำนวน "รอบ" (ใช้ rIndex เป็นตัวอ้างอิง)
+  settings.rounds.forEach((roundName, rIndex) => {
+    html += `<div class="fsk-round-block">`;
+    html += `<h3 class="fsk-round-title">${roundName || 'รอบที่ ' + (rIndex + 1)}</h3>`;
+
+    // 3. ลูปสร้างรายชื่อ "ทีม" ไว้ข้างในรอบนั้นๆ (ใช้ tIndex เป็นตัวอ้างอิง)
+    settings.teams.forEach((teamName, tIndex) => {
+      // 🔑 สร้าง Key รูปแบบ "r0_t0" (รอบที่ 0 ทีมที่ 0) เพื่อใช้เป็นฐานข้อมูล
+      const scoreKey = `r${rIndex}_t${tIndex}`; 
+      
+      html += `
+        <div class="fsk-team-row">
+          <div class="fsk-team-name">${teamName || 'ทีม ' + (tIndex + 1)}</div>
+          <div class="fsk-score-group" id="fsk-group-${scoreKey}">
+            ${[1, 2, 3, 4, 5].map(score => `
+              <button class="fsk-score-btn" 
+                      onclick="selectFskScore('${scoreKey}', ${score})">
+                ${score}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    });
+    
+    html += `</div>`; // ปิดกล่องรอบ
+  });
+
+  // เพิ่มปุ่มกดยืนยันส่งข้อมูลด้านล่างสุด
+  html += `
+    <button class="fsk-submit-btn" onclick="submitFskToFirebase()">
+      ยืนยันการให้คะแนน (FSK)
+    </button>
+  `;
+
+  container.innerHTML = html;
+}
+
+// 2. ฟังก์ชันจัดการเมื่อกรรมการกดปุ่มคะแนน
+function selectFskScore(scoreKey, score) {
+  // บันทึกคะแนนลงในตัวแปร Draft
+  fskDraftScores[scoreKey] = score;
+
+  // อัปเดต UI ให้ปุ่มเปลี่ยนสี
+  const group = document.getElementById(`fsk-group-${scoreKey}`);
+  const buttons = group.querySelectorAll('.fsk-score-btn');
+  
+  // ล้างสีปุ่มเก่าออกทั้งหมด แล้วใส่สีปุ่มที่เพิ่งกด
+  buttons.forEach(btn => btn.classList.remove('selected'));
+  buttons[score - 1].classList.add('selected'); // score - 1 เพราะ array เริ่มที่ 0
+}
+
+// 3. ฟังก์ชันสำหรับส่งขึ้น Firebase (เฟสต่อไป)
+function selectFskScore(scoreKey, score) {
+  fskDraftScores[scoreKey] = score;
+
+  const group = document.getElementById(`fsk-group-${scoreKey}`);
+  const buttons = group.querySelectorAll('.fsk-score-btn');
+  
+  buttons.forEach(btn => btn.classList.remove('selected'));
+  buttons[score - 1].classList.add('selected');
+}
+
+async function submitFskToFirebase() {
+  // 1. ตรวจสอบว่าให้คะแนนครบทุกช่องหรือยัง
+  const totalExpected = settings.rounds.length * settings.teams.length;
+  if (Object.keys(fskDraftScores).length < totalExpected) {
+    alert(`กรุณาให้คะแนนให้ครบทุกช่องครับ (ตอนนี้ให้ไปแล้ว ${Object.keys(fskDraftScores).length}/${totalExpected})`);
+    return;
+  }
+
+  // ป้องกันการกดซ้ำซ้อน: เปลี่ยนข้อความปุ่มและปิดการกดชั่วคราว
+  const submitBtn = document.querySelector('#fsk-content-area .fsk-submit-btn');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = "กำลังบันทึกข้อมูล...";
+  submitBtn.disabled = true;
+
+  try {
+    // 2. เตรียมก้อนข้อมูล (Payload) ที่จะส่งขึ้นไปเก็บ
+    const payload = {
+      judgeName: currentFskJudgeName,
+      scores: fskDraftScores,
+      submittedAt: new Date().toISOString() // แอบเก็บเวลาที่กดยืนยันไว้ด้วย
+    };
+
+    // 3. ยิงข้อมูลขึ้น Firebase ไปที่ Collection: fskVotes -> Document: (ชื่อกรรมการ)
+    await db.collection('fskVotes').doc(currentFskJudgeName).set(payload);
+
+    // 4. บันทึกสำเร็จ!
+    alert("บันทึกคะแนน FSK เรียบร้อยแล้ว ขอบคุณครับ!");
+    
+    // เคลียร์ค่าตัวแปรให้สะอาด และสลับกลับไปหน้าแรก
+    fskDraftScores = {}; 
+    currentFskJudgeName = "";
+    closeFskScreen();
+
+  } catch (error) {
+    console.error("Error submitting FSK scores:", error);
+    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
+    
+    // คืนค่าปุ่มให้กลับมากดใหม่ได้
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
+}
+
