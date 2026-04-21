@@ -497,24 +497,22 @@ body.light-mode .logo-icon:hover {
   flex: 1;
   border: none;
   position: relative;
-  overflow: visible; /* เปลี่ยนจาก hidden เพื่อให้เงาฐานปุ่มไม่ขาด */
+  overflow: visible;
   cursor: pointer;
-  min-height: 100px; /* เพิ่มความสูงขึ้นเพื่อให้เห็นมิติ 3D ชัดเจน */
+  min-height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 55px; /* เพิ่มความมนให้ดูทันสมัย */
+  border-radius: 55px;
   margin: 5px 0;
-  margin-left: 10px;   /* ขยับจากขอบซ้าย 20px */
-  margin-right: 10px;  /* ขยับจากขอบขวา 20px */
-  margin-top: 10px;   /* ขยับจากขอบซ้าย 20px */
-  margin-bottom: 10px;   /* ขยับจากขอบซ้าย 20px */
-  
-  /* หัวใจของ 3D: ใช้เงาแข็งเป็นฐานปุ่ม (Thickness) */
-  transition: all 0.1s ease; /* เวลากดต้องตอบสนองไว */
+  margin-left: 25px;
+  margin-right: 25px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  transition: all 0.1s ease;
 }
 
-/* ตั้งค่าสีฐานปุ่ม (Shadow Color) แยกตามประเภท */
+/* สีปุ่ม */
 .btn-pass {
   background: linear-gradient(160deg, var(--clr-pass) 0%, var(--clr-pass-dark) 100%);
   box-shadow: 0 8px 0 #15803d, 0 15px 25px rgba(0, 0, 0, 9.0);
