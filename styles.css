@@ -1252,18 +1252,21 @@ body.light-mode #btn-theme-toggle {
   position: fixed;
   width: 35px;
   height: 35px;
+  min-width: 35px;
+  max-width: 35px;
   top: 8px;
   right: 160px;
   z-index: 9999;
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
   border: 1px solid var(--clr-border);
-  font-size: 1.0rem;
+  font-size: 1.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-decoration: none;
 }
 
 /* เอฟเฟกต์ตอนกดปุ่ม */
@@ -1283,13 +1286,15 @@ body.dark-mode .floating-pdf-btn {
   position: fixed;
   width: 35px;
   height: 35px;
+  min-width: 35px;
+  max-width: 35px;
   top: 8px;
   right: 60px;
   z-index: 9999;
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
   border: 1px solid var(--clr-border);
-  font-size: 1.0rem;
+  font-size: 1.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1315,13 +1320,15 @@ body.dark-mode .floating-theme-btn {
   position: fixed;
   width: 35px;
   height: 35px;
+  min-width: 35px;
+  max-width: 35px;
   top: 8px;
   right: 110px;
   z-index: 9999;
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
   border: 1px solid var(--clr-border);
-  font-size: 1.0rem;
+  font-size: 1.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1347,6 +1354,8 @@ body.dark-mode .floating-home-btn {
   position: fixed;
   width: 35px;
   height: 35px;
+  min-width: 35px;
+  max-width: 35px;
   top: 8px;
   right: 10px;
   z-index: 9999;
