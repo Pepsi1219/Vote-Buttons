@@ -1249,16 +1249,16 @@ body.light-mode #btn-theme-toggle {
 
 /* --- ปุ่มเปิดคู่มือ PDF แบบลอย --- */
 .floating-pdf-btn {
-  position: absolute; 
+  position: fixed;
+  width: 35px;
+  height: 35px;
+  top: 8px;
+  right: 160px;
   z-index: 9999;
-  right: 160px; /* Change to 130 */
-  top: calc(8px + env(safe-area-inset-bottom)); /* Change to 15 */
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
   border: 1px solid var(--clr-border);
-  color: white;
-  text-decoration: none; /* เอาขีดเส้นใต้ที่เป็นค่าเริ่มต้นของลิงก์ออก */
-  font-size: 1.5rem;
+  font-size: 1.0rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1280,16 +1280,16 @@ body.dark-mode .floating-pdf-btn {
 
 /* --- ปุ่ม Theme แบบลอย (Floating Theme Button) --- */
 .floating-theme-btn {
-  position: absolute; /* ลอยเป็นอิสระภายในหน้า Judge */
+  position: fixed;
+  width: 35px;
+  height: 35px;
+  top: 8px;
+  right: 60px;
   z-index: 9999;
-  right:60px; 
-  Top: calc(8px + env(safe-area-inset-bottom)); 
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
   border: 1px solid var(--clr-border);
-  font-size: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
-  
+  font-size: 1.0rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1312,19 +1312,16 @@ body.dark-mode .floating-theme-btn {
 
 /* --- ปุ่ม Home แบบลอย (Floating Button) --- */
 .floating-home-btn {
-  position: fixed;   /* บังคับลอยติดหน้าจอ */
-  z-index: 9999;     /* ให้อยู่บนสุดเสมอ ไม่โดนอะไรบัง */
-  right: 110px; 
-  top: calc(8px + env(safe-area-inset-bottom)); 
-  border-radius: 50%; /* ทำให้เป็นวงกลมสมบูรณ์ */
-  background: var(--clr-surface, #ffffff); /* สีพื้นหลังกลมกลืนกับแอป */
+  position: fixed;
+  width: 35px;
+  height: 35px;
+  top: 8px;
+  right: 110px;
+  z-index: 9999;
+  border-radius: 50%;
+  background: var(--clr-surface, #ffffff);
   border: 1px solid var(--clr-border);
-  font-size: 1.5rem;
-  
-  /* เพิ่มเงาให้ดู "ลอย" ขึ้นมาจากพื้นหลังจริงๆ */
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
-  
-  /* จัดให้อีโมจิอยู่ตรงกลางเป๊ะๆ */
+  font-size: 1.0rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1348,7 +1345,9 @@ body.dark-mode .floating-home-btn {
 /* --- ปุ่มเปลี่ยนภาษาหน้าโหวต */
 .btn-lang-judge {
   position: fixed;
-  top: calc(8px + env(safe-area-inset-bottom)); 
+  width: 35px;
+  height: 35px;
+  top: 8px;
   right: 10px;
   z-index: 9999;
   border-radius: 50%;
