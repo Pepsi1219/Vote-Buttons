@@ -1151,8 +1151,8 @@ body.light-mode .swipe-btn {
 /* ปุ่มเปลี่ยนภาษา */
 .btn-lang-style {
   position: fixed;
-  top: 80px;
-  right: 20px;
+  top: 8px;
+  right: 60px;
   z-index: 9999;
   
   /* 🎨 เปลี่ยนจากสี Fix เป็น Variables */
@@ -1184,8 +1184,8 @@ body.light-mode #btn-lang {
 /* ปุ่มตั้งค่า */
 #btn-settings-setup {
   position: fixed;
-  top: 20px;
-  right: 18px;
+  top: 8px;
+  right: 10px;
   z-index: 9999;
 
   /* 🎨 เปลี่ยนจากสี Fix เป็น Variables */
@@ -1217,18 +1217,14 @@ body.light-mode #btn-settings-setup {
 
 /* ปุ่มสลับโหมด */
 #btn-theme-toggle {
-  position: fixed;    /* ลอยคงที่ */
-  top: 20px;          /* ห่างจากขอบบน 20px (เท่ากับปุ่มภาษา) */
-  left: 20px;         /* ห่างจากขอบซ้าย 20px */
-  z-index: 9999;      /* อยู่ชั้นบนสุด */
-
-  /* ตกแต่งให้พรีเมียมเหมือนปุ่มอื่นๆ */
+  position: fixed;
+  top: 8px;         
+  right: 110px; 
+  z-index: 9999;   
   background: var(--clr-surface2);
   backdrop-filter: blur(5px);
   border: 1px solid var(--clr-border);
   color: var(--clr-text);
-  width: 45px;
-  height: 45px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1255,10 +1251,8 @@ body.light-mode #btn-theme-toggle {
 .floating-pdf-btn {
   position: absolute; 
   z-index: 9999;
-  width: 50px;
-  height: 50px;
-  right: 190px; /* Change to 130 */
-  top: calc(15px + env(safe-area-inset-bottom)); /* Change to 15 */
+  right: 160px; /* Change to 130 */
+  top: calc(8px + env(safe-area-inset-bottom)); /* Change to 15 */
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
   border: 1px solid var(--clr-border);
@@ -1288,12 +1282,8 @@ body.dark-mode .floating-pdf-btn {
 .floating-theme-btn {
   position: absolute; /* ลอยเป็นอิสระภายในหน้า Judge */
   z-index: 9999;
-  right: 70px; 
-  Top: calc(15px + env(safe-area-inset-bottom)); 
-  
-  /* 🎨 รูปร่างปุ่ม (ก๊อปปี้สไตล์มาจากปุ่ม Home) */
-  width: 50px;
-  height: 50px;
+  right:60px; 
+  Top: calc(8px + env(safe-area-inset-bottom)); 
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
   border: 1px solid var(--clr-border);
@@ -1324,10 +1314,8 @@ body.dark-mode .floating-theme-btn {
 .floating-home-btn {
   position: fixed;   /* บังคับลอยติดหน้าจอ */
   z-index: 9999;     /* ให้อยู่บนสุดเสมอ ไม่โดนอะไรบัง */
-  right: 130px; 
-  top: calc(15px + env(safe-area-inset-bottom)); 
-  width: 50px;
-  height: 50px;
+  right: 110px; 
+  top: calc(8px + env(safe-area-inset-bottom)); 
   border-radius: 50%; /* ทำให้เป็นวงกลมสมบูรณ์ */
   background: var(--clr-surface, #ffffff); /* สีพื้นหลังกลมกลืนกับแอป */
   border: 1px solid var(--clr-border);
@@ -1360,11 +1348,9 @@ body.dark-mode .floating-home-btn {
 /* --- ปุ่มเปลี่ยนภาษาหน้าโหวต */
 .btn-lang-judge {
   position: fixed;
-  top: calc(15px + env(safe-area-inset-bottom)); 
+  top: calc(8px + env(safe-area-inset-bottom)); 
   right: 10px;
   z-index: 9999;
-  width: 50px;
-  height: 50px;
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
   border: 1px solid var(--clr-border);
