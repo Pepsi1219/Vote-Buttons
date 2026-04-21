@@ -22,6 +22,12 @@
   <div id="screen-setup" class="screen active">
     <div class="setup-container">
       <div class="setup-header">
+
+        <button id="btn-fsk-entry" class="icon-btn" onclick="openFskScreen()">
+    <span class="fsk-text">FSK</span>
+  </button>
+
+        
         <button id="btn-theme-toggle" class="icon-btn" aria-label="Toggle Theme" onclick="toggleTheme()">
   <span class="theme-icon">🌙</span>
 </button>
@@ -54,6 +60,35 @@
       </div>
     </div>
   </div>
+
+
+    <div id="screen-fsk" class="screen">
+    <div class="top-bar">
+      <div class="top-bar-info">
+        <button class="icon-btn" onclick="closeFskScreen()" style="margin-right: 10px;">◀</button>
+        <div class="current-team-name" style="font-size: 1.2rem;">กรรมการพิเศษ (FSK)</div>
+      </div>
+    </div>
+  
+    <div class="fsk-container" style="padding: 20px; overflow-y: auto; height: calc(100vh - 70px);">
+      
+      <div id="fsk-login-area" style="text-align: center; margin-top: 40px;">
+        <h3 style="margin-bottom: 20px;">กรุณาเลือกชื่อของท่าน</h3>
+        <select id="fsk-judge-select" class="fsk-select-box">
+          <option value="">-- กำลังโหลดรายชื่อ --</option>
+        </select>
+        <button class="fsk-submit-btn" style="margin-top: 20px;" onclick="startFskEvaluation()">
+          เข้าสู่หน้าประเมิน
+        </button>
+      </div>
+  
+      <div id="fsk-content-area" style="display: none;">
+        </div>
+  
+    </div>
+  </div>
+
+  
 
   <div id="screen-judge" class="screen">
     <div class="top-bar">
