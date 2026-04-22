@@ -947,11 +947,15 @@ function restoreSession() {
 
 /* ADMIN — เปิด/ปิด Admin Panel */
 function openAdmin() {
+  // 🔓 ปิดการตรวจสอบรหัสผ่านชั่วคราว
+  /*
   // 1. ถามรหัสผ่านก่อนเข้าถึงหน้า Admin
   const password = prompt("กรุณากรอกรหัสผ่านผู้ดูแลระบบ (Admin Password):");
 
   // 2. ตรวจสอบรหัสผ่าน
   if (password === "Admin1219") {
+  */
+    
     // ✅ ถ้ารหัสถูกต้อง ให้รัน Logic เดิมทั้งหมด
     showScreen('screen-admin');
     
@@ -967,11 +971,13 @@ function openAdmin() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     console.log("🔐 Admin Access Granted");
+  /*
   } 
   else if (password !== null) {
     // ❌ ถ้ารหัสผิด (และไม่ได้กด Cancel) ให้แจ้งเตือน
     alert("❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
   }
+  */
 }
 
 function closeAdmin() {
@@ -1269,23 +1275,28 @@ async function buildSummary() {
   if (judgeNameEl) judgeNameEl.textContent = currentJudge.name;
 
   try {
-    // 2. 🔥 แก้ไข: โหลด votes ทั้งหมดจาก Firestore (เปลี่ยนจาก .ref() เป็น .collection())
+    // 2. โหลด votes ทั้งหมดจาก Firestore
     const snap = await db.collection('votes').get();
     const allVotes = {};
-    
-    // แปลงข้อมูลจาก Firestore Snapshot ให้เป็น Object ที่โค้ดเดิมเข้าใจ
     snap.forEach(doc => {
       allVotes[doc.id] = doc.data();
+    });
+
+    // 🚀 โหลดข้อมูล fskVotes ทั้งหมดจาก Firestore
+    const fskSnap = await db.collection('fskVotes').get();
+    const fskVotesList = [];
+    fskSnap.forEach(doc => {
+      fskVotesList.push(doc.data());
     });
 
     // 3. สร้างตารางผลโหวตเฉพาะของเราเอง
     buildMyVotesTable(allVotes);
     
-    // 4. สร้างกราฟสรุปผลรวม (ใช้ Chart.js)
-    buildCharts(allVotes);
+    // 4. สร้างกราฟสรุปผลรวม (ส่ง FSK เข้าไปแอบบวกด้วย)
+    buildCharts(allVotes, fskVotesList);
 
-    // 🔥 5. เพิ่มบรรทัดนี้ลงไปเพื่อสร้างตารางผู้ชนะรายรอบ
-    renderRoundWinners(allVotes);
+    // 5. สร้างตารางผู้ชนะรายรอบ (ส่ง FSK เข้าไปแอบบวกด้วย)
+    renderRoundWinners(allVotes, fskVotesList);
 
   } catch (error) {
     console.error("❌ Error building summary:", error);
@@ -1323,20 +1334,50 @@ function buildMyVotesTable(allVotes) {
   });
 }
 
-function buildCharts(allVotes) {
+// 🚀 ฟังก์ชันช่วยสร้างสีแบบสุ่มหรือกำหนดชุดสี (Palettes)
+// พงศธรสามารถกำหนดสไตล์สีที่ชอบได้ที่นี่ครับ
+function getTeamColor(index, isBorder = false) {
+  // 🎨 ตัวอย่างชุดสีแบบ Bright/Modern (เรียงตามลำดับทีม 1, 2, 3...)
+  // ทีมที่ 1: ฟ้า, ทีมที่ 2: เขียว, ทีมที่ 3: ส้ม, ทีมที่ 4: แดง, ทีมที่ 5: ม่วง, ทีมที่ 6: เหลือง
+  const colors = [
+    { bg: 'rgba(54, 162, 235, 0.7)',  border: 'rgba(54, 162, 235, 1)' },   // Blue
+    { bg: 'rgba(75, 192, 192, 0.7)',  border: 'rgba(75, 192, 192, 1)' },   // Teal
+    { bg: 'rgba(255, 159, 64, 0.7)',  border: 'rgba(255, 159, 64, 1)' },   // Orange
+    { bg: 'rgba(255, 99, 132, 0.7)',  border: 'rgba(255, 99, 132, 1)' },   // Red
+    { bg: 'rgba(153, 102, 255, 0.7)', border: 'rgba(153, 102, 255, 1)' },  // Purple
+    { bg: 'rgba(255, 206, 86, 0.7)',  border: 'rgba(255, 206, 86, 1)' }    // Yellow
+  ];
+
+  // ถ้าจำนวนทีมเกินจำนวนสีที่มี ให้วนกลับมาใช้สีแรก (Using Modulo)
+  const colorIndex = index % colors.length;
+  const selectedColor = colors[colorIndex];
+
+  return isBorder ? selectedColor.border : selectedColor.bg;
+}
+
+function buildCharts(allVotes, fskVotesList = []) {
   const teams  = settings.teams  || [];
   const rounds = settings.rounds || [];
 
-  // --- การคำนวณคะแนน (ส่วนนี้ของคุณดีมากอยู่แล้ว ไม่ต้องแก้) ---
+  // 🔥 จุดหลอมรวมคะแนน: Pass ปกติ + FSK (เหมือนเดิม)
   const passData = teams.map((_, ti) => {
-    let p = 0;
+    let p = 0; 
     rounds.forEach((_, ri) => {
       const slot = allVotes[`${ri}_${ti}`] || {};
       Object.values(slot).forEach(v => { if (v === 'pass') p++; });
+      const fskSlotId = `r${ri}_t${ti}`;
+      fskVotesList.forEach(fskDoc => {
+        if (fskDoc.scores && fskDoc.scores[fskSlotId]) { p += fskDoc.scores[fskSlotId]; }
+      });
     });
-    return p;
+    return p; 
   });
 
+  // 🚀 [เพิ่มใหม่] สร้าง Array ของสีพื้นหลังและสีขอบ สำหรับแต่ละทีม ---
+  const backgroundColors = teams.map((_, index) => getTeamColor(index));
+  const borderColors = teams.map((_, index) => getTeamColor(index, true));
+
+  // (failData, totalPass, totalFail ยังคงไว้สำหรับ Pie Chart เหมือนเดิม)
   const failData = teams.map((_, ti) => {
     let f = 0;
     rounds.forEach((_, ri) => {
@@ -1345,13 +1386,12 @@ function buildCharts(allVotes) {
     });
     return f;
   });
-
   const totalPass = passData.reduce((a, b) => a + b, 0);
   const totalFail = failData.reduce((a, b) => a + b, 0);
 
-  // --- การวาด Bar Chart ---
+  // --- การวาด Bar Chart (ฉบับแยกสีทีม) ---
   const barCanvas = document.getElementById('bar-chart');
-  if (barCanvas) { // เช็คก่อนว่ามี Canvas นี้ไหม
+  if (barCanvas) { 
     const barCtx = barCanvas.getContext('2d');
     if (barChartInst) barChartInst.destroy();
     barChartInst = new Chart(barCtx, {
@@ -1360,18 +1400,11 @@ function buildCharts(allVotes) {
         labels: teams,
         datasets: [
           {
-            label: t('pass'),
-            data: passData,
-            backgroundColor: 'rgba(16,185,129,0.75)',
-            borderColor: '#10b981',
-            borderWidth: 2,
-            borderRadius: 6,
-          },
-          {
-            label: t('fail'),
-            data: failData,
-            backgroundColor: 'rgba(239,68,68,0.75)',
-            borderColor: '#ef4444',
+            label: 'คะแนนรวม (Points)', 
+            data: passData, 
+            // 🚀 เปลี่ยนจากสีเดียว เป็น Array ของสีที่เราสร้างไว้ด้านบน
+            backgroundColor: backgroundColors, 
+            borderColor: borderColors,
             borderWidth: 2,
             borderRadius: 6,
           }
@@ -1382,25 +1415,19 @@ function buildCharts(allVotes) {
         maintainAspectRatio: false,
         plugins: { 
           legend: { 
-            labels: { 
-              color: '#94a3b8', 
-              font: { family: "'Noto Sans Thai', sans-serif" } 
-            } 
+            display: false, // ซ่อน label
+            labels: { color: '#94a3b8', font: { family: "'Noto Sans Thai', sans-serif" } } 
           } 
         },
         scales: {
           x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { 
-            ticks: { color: '#94a3b8', stepSize: 1 }, 
-            grid: { color: 'rgba(255,255,255,0.05)' }, 
-            beginAtZero: true 
-          }
+          y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
         }
       }
     });
   }
 
-  // --- การวาด Pie Chart (Doughnut) ---
+  // --- การวาด Pie Chart (เหมือนเดิม 100%) ---
   const pieCanvas = document.getElementById('pie-chart');
   if (pieCanvas) {
     const pieCtx = pieCanvas.getContext('2d');
@@ -1422,11 +1449,7 @@ function buildCharts(allVotes) {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: { 
-              color: '#94a3b8', 
-              font: { family: "'Noto Sans Thai', sans-serif" }, 
-              padding: 16 
-            },
+            labels: { color: '#94a3b8', font: { family: "'Noto Sans Thai', sans-serif" }, padding: 16 },
             position: 'bottom'
           }
         }
@@ -1438,6 +1461,89 @@ function buildCharts(allVotes) {
 /* SWIPE — ปัดหน้าจอในหน้า Summary */
 let swipeSummaryPage = 1; // 1 = ตาราง My Votes, 2 = กราฟสรุปผลรวม
 let touchStartX = 0;
+
+// --- วางไว้ต่อท้าย buildCharts ได้เลย ---
+async function renderRoundWinners(allVotes, fskVotesList = []) {
+  const container = document.getElementById('winners-list');
+  const grandContainer = document.getElementById('grand-champion-container');
+  if (!container || !grandContainer || !settings) return;
+
+  container.innerHTML = ''; 
+  grandContainer.innerHTML = '';
+
+  const totalScores = {};
+  settings.teams.forEach(team => totalScores[team] = 0);
+
+  // --- ส่วนที่ 1: วาดผู้ชนะรายรอบ ---
+  settings.rounds.forEach((roundName, ri) => {
+    let topScore = -1;
+    let winners = [];
+
+    settings.teams.forEach((teamName, ti) => {
+      const slotKey = `${ri}_${ti}`;
+      const votes = allVotes[slotKey] || {};
+      
+      // 1. นับคะแนนปกติ
+      let points = Object.values(votes).filter(v => v === 'pass').length;
+
+      // 2. 🔥 หลอมรวมคะแนน FSK ในรอบนี้
+      const fskSlotId = `r${ri}_t${ti}`;
+      fskVotesList.forEach(fskDoc => {
+        if (fskDoc.scores && fskDoc.scores[fskSlotId]) {
+          points += fskDoc.scores[fskSlotId];
+        }
+      });
+
+      // สะสมคะแนนรวมให้แต่ละทีม
+      totalScores[teamName] += points;
+
+      if (points > topScore) {
+        topScore = points;
+        winners = [teamName];
+      } else if (points === topScore && topScore > 0) {
+        winners.push(teamName);
+      }
+    });
+
+    const row = document.createElement('div');
+    row.className = 'winner-row';
+    const winnerDisplay = (topScore > 0) ? `🥇 ${winners.join(' | ')}` : '-';
+    row.innerHTML = `
+      <div class="winner-info">
+        <small>${ri + 1}. ${roundName.toUpperCase()}</small>
+        <div class="winner-name">${winnerDisplay}</div>
+      </div>
+      <div class="winner-score">${topScore > 0 ? topScore : 0} Pts</div> `;
+    container.appendChild(row);
+  });
+
+  // --- ส่วนที่ 2: คำนวณและวาด Grand Champion (เหมือนเดิม 100%) ---
+  let maxTotal = -1;
+  let champions = [];
+
+  Object.entries(totalScores).forEach(([teamName, score]) => {
+    if (score > maxTotal) {
+      maxTotal = score;
+      champions = [teamName];
+    } else if (score === maxTotal && maxTotal > 0) {
+      champions.push(teamName);
+    }
+  });
+
+  if (maxTotal > 0) {
+    const grandCard = document.createElement('div');
+    grandCard.className = 'grand-champion-card';
+    grandCard.innerHTML = `
+      <div class="grand-header">🏆 Presentation & Creative </div>
+      <div class="grand-content">
+        <div class="grand-names">${champions.join(' & ')}</div>
+        <div class="grand-score">Total: ${maxTotal} Points</div>
+      </div>
+    `;
+    grandContainer.appendChild(grandCard);
+  }
+}
+
 
 /**
  * ฟังก์ชันเปลี่ยนหน้าสรุปผล
@@ -1458,80 +1564,7 @@ function goToPage(page) {
   updateSwipeDots(page);
 }
 
-// --- วางไว้ต่อท้าย buildCharts ได้เลย ---
-async function renderRoundWinners(allVotes) {
-  const container = document.getElementById('winners-list');
-  const grandContainer = document.getElementById('grand-champion-container');
-  if (!container || !grandContainer || !settings) return;
 
-  container.innerHTML = ''; 
-  grandContainer.innerHTML = '';
-
-  // สร้าง Object ไว้เก็บคะแนนรวมของแต่ละทีม
-  const totalScores = {};
-  settings.teams.forEach(team => totalScores[team] = 0);
-
-  // --- ส่วนที่ 1: วาดผู้ชนะรายรอบ (เหมือนเดิมแต่เพิ่มเก็บคะแนนรวม) ---
-  settings.rounds.forEach((roundName, ri) => {
-    let topScore = -1;
-    let winners = [];
-
-    settings.teams.forEach((teamName, ti) => {
-      const slotKey = `${ri}_${ti}`;
-      const votes = allVotes[slotKey] || {};
-      const passCount = Object.values(votes).filter(v => v === 'pass').length;
-
-      // สะสมคะแนนรวมให้แต่ละทีม
-      totalScores[teamName] += passCount;
-
-      if (passCount > topScore) {
-        topScore = passCount;
-        winners = [teamName];
-      } else if (passCount === topScore && topScore > 0) {
-        winners.push(teamName);
-      }
-    });
-
-    const row = document.createElement('div');
-    row.className = 'winner-row';
-    const winnerDisplay = (topScore > 0) ? `🥇 ${winners.join(' | ')}` : '-';
-    row.innerHTML = `
-      <div class="winner-info">
-        <small>${ri + 1}. ${roundName.toUpperCase()}</small>
-        <div class="winner-name">${winnerDisplay}</div>
-      </div>
-      <div class="winner-score">${topScore > 0 ? topScore : 0} Pass</div>
-    `;
-    container.appendChild(row);
-  });
-
-  // --- ส่วนที่ 2: คำนวณและวาด Grand Champion (ผู้ชนะคะแนนรวมสูงสุด) ---
-  let maxTotal = -1;
-  let champions = [];
-
-  Object.entries(totalScores).forEach(([teamName, score]) => {
-    if (score > maxTotal) {
-      maxTotal = score;
-      champions = [teamName];
-    } else if (score === maxTotal && maxTotal > 0) {
-      champions.push(teamName);
-    }
-  });
-
-  if (maxTotal > 0) {
-    const grandCard = document.createElement('div');
-    grandCard.className = 'grand-champion-card';
-    grandCard.innerHTML = `
-      <div class="grand-header">🏆 GRAND CHAMPION</div>
-      <div class="grand-content">
-        <div class="grand-names">${champions.join(' & ')}</div>
-        <div class="grand-score">Total: ${maxTotal} Points</div>
-      </div>
-      <div class="grand-footer">คะแนนรวมสูงสุด</div>
-    `;
-    grandContainer.appendChild(grandCard);
-  }
-}
 
 function goToPage(page) {
   const swipe = document.getElementById('summary-swipe');
@@ -1658,6 +1691,8 @@ window.buildSummary = buildSummary;
 // เริ่มต้นระบบเมื่อโหลด DOM เสร็จสิ้น
 document.addEventListener('DOMContentLoaded', init);
 
+
+
 /* ANIMATE TEAM CHANGE  */
 function animateTeamChange() {
   const topBar = document.querySelector('.top-bar-info');
@@ -1736,6 +1771,25 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+
+// ฟังก์ชันตรวจสอบรหัสผ่านก่อนเข้าหน้า FSK
+function checkFskPassword() {
+  // สร้างกล่องเด้งขึ้นมาให้กรอกรหัสผ่าน
+  const password = prompt("🔒 กรุณากรอกรหัสผ่านสำหรับกรรมการพิเศษ (FSK):");
+
+  // ตรวจสอบรหัสผ่าน
+  if (password === "FSK2026") {
+    // ถ้ารหัสถูก ให้เปิดหน้า FSK ได้เลย
+    openFskScreen();
+  } else if (password === null) {
+    // ถ้ากดยกเลิก (Cancel) ก็ไม่ต้องทำอะไร ปล่อยผ่านไป
+    return;
+  } else {
+    // ถ้ากรอกรหัสผิด แจ้งเตือนแล้วเด้งออก
+    alert("❌ รหัสผ่านไม่ถูกต้องครับ ไม่สามารถเข้าสู่ระบบ FSK ได้");
+  }
+}
 
 // ฟังก์ชันเปิดหน้า FSK
 let currentFskJudgeName = "";
