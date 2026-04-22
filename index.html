@@ -23,9 +23,9 @@
     <div class="setup-container">
       <div class="setup-header">
 
-        <button id="btn-fsk-entry" class="icon-btn" onclick="openFskScreen()">
-    <span class="fsk-text">FSK</span>
-  </button>
+        <button id="btn-fsk-entry" class="icon-btn" onclick="checkFskPassword()">
+  <span class="fsk-text">FSK</span>
+</button>
 
         
         <button id="btn-theme-toggle" class="icon-btn" aria-label="Toggle Theme" onclick="toggleTheme()">
@@ -219,12 +219,13 @@
     </div>
   </div>
 
-  <div id="screen-summary" class="screen">
-    <div id="summary-swipe" class="summary-swipe">
+      <div id="screen-summary" class="screen">
+      <div id="summary-swipe" class="summary-swipe">
       <div class="summary-page" id="summary-page-1">
         <div class="summary-header">
           <h2 class="summary-title" data-i18n="summaryTitle">📊 สรุปผลการประเมิน</h2>
           <p id="summary-judge-name" class="summary-judge-name"></p>
+          
         </div>
         
         <div id="my-votes-table" class="votes-table"></div>
