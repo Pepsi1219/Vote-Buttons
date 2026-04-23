@@ -105,8 +105,8 @@ const i18n = {
     chkProcess: "ขั้นตอนการทำงานถูกต้อง",
     chkPic: "บุคคลที่รับผิดชอบได้รับการระบุอย่างชัดเจนและถูกต้อง",
     chkOutput: "ผลลัพธ์ของแต่ละกระบวนการถูกต้อง",
-    chkLeadtime: "ระยะเวลาของแต่ละกระบวนการถูกต้อง",
     chkSystem: "ระบบถูกใช้งานอย่างถูกต้องในทุกขั้นตอนของกระบวนการ",
+    chkLeadtime: "ระยะเวลาของแต่ละกระบวนการถูกต้อง",
     note: "หมายเหตุ:",
     modalWarningDesc: 'ผู้รับการประเมินต้องปฏิบัติได้ถูกต้องครบถ้วนทั้ง 5 หัวข้อ จึงจะพิจารณาให้ผลเป็น "ผ่าน"',
     cancelBtn: "ยกเลิก",
@@ -234,6 +234,30 @@ async function playVoteSound() {
 
   } catch (e) {
     console.error("Audio Error:", e);
+  }
+}
+
+/* =================================================================
+   🎵 ระบบเสียงเพลง BGM ระหว่างรอโหวต (HTML5 Audio)
+   ================================================================= */
+
+// โหลดไฟล์เสียง BGM จาก GitHub ของคุณ
+const waitingBgm = new Audio('https://raw.githubusercontent.com/Pepsi1219/Vote-Buttons/main/waiting-bgm.mp3'); 
+waitingBgm.loop = true; // เล่นวนลูป
+waitingBgm.volume = 0.4; // ปรับความดังลดลงเหลือ 40% จะได้ไม่กลบเสียงตอนกดปุ่ม
+
+// ฟังก์ชันสั่งเล่นเสียง
+function playWaitingBgm() {
+  if (waitingBgm.paused) {
+    waitingBgm.play().catch(err => console.log("รอการคลิกจากผู้ใช้ก่อนเล่นเสียง", err));
+  }
+}
+
+// ฟังก์ชันสั่งหยุดเสียง
+function stopWaitingBgm() {
+  if (!waitingBgm.paused) {
+    waitingBgm.pause();
+    waitingBgm.currentTime = 0; // กรอเพลงกลับไปวินาทีที่ 0
   }
 }
 
@@ -485,6 +509,9 @@ function updateJudgeScreen() {
     if (overlay) overlay.classList.add('hidden');
     if (btnPass) btnPass.disabled = false;
     if (btnFail) btnFail.disabled = false;
+    
+    // 🎵 สั่งให้ดนตรีบิ้วอารมณ์ดังขึ้น! (ถ้าเพลงยังไม่เล่น)
+    if (typeof playWaitingBgm === 'function') playWaitingBgm();
   } 
   else if (!isActive) {
     // ⏳ รอแอดมิน: แสดง Overlay และข้อความรอเปิดรอบ
@@ -492,6 +519,9 @@ function updateJudgeScreen() {
     if (overlayMsg) overlayMsg.textContent = t('waitingActive');
     if (btnPass) btnPass.disabled = true;
     if (btnFail) btnFail.disabled = true;
+    
+    // 🔇 ปิดเพลง (เพราะรอบยังไม่เปิด หรือปิดรอบไปแล้ว)
+    if (typeof stopWaitingBgm === 'function') stopWaitingBgm();
   } 
   else {
     // ✅ โหวตไปแล้ว: แสดง Overlay และข้อความรอกรรมการท่านอื่น
@@ -499,6 +529,9 @@ function updateJudgeScreen() {
     if (overlayMsg) overlayMsg.textContent = t('waitingOthers');
     if (btnPass) btnPass.disabled = true;
     if (btnFail) btnFail.disabled = true;
+    
+    // 🔇 ปิดเพลง (เพราะกรรมการโหวตเสร็จแล้ว ภารกิจจบ)
+    if (typeof stopWaitingBgm === 'function') stopWaitingBgm();
   }
 
   // 5. อัปเดต Banner สถานะสรุป (จุดไข่ปลาและจำนวนคนโหวต)
@@ -698,97 +731,110 @@ async function checkAllVoted(voteData, judgeCount, ri, ti) {
 }
 
 /* CAST VOTE — กรรมการกดปุ่ม */
-// ตัวแปรสำหรับเก็บค่าผลโหวตชั่วคราวก่อนกดยืนยันใน Popup
+
 let pendingVoteType = null;
 
-/* 1. CAST VOTE — กรรมการกดปุ่ม (เปลี่ยนมาเปิด Popup ตรวจสอบก่อน) */
+/* 1. CAST VOTE — กรรมการกดปุ่ม (เปิด Popup ตรวจสอบก่อน) */
 function castVote(choice) {
-  // 1. ตรวจสอบสิทธิ์และสถานะการเปิดรอบ
+  // ตรวจสอบสิทธิ์และสถานะการเปิดรอบ
   if (!currentJudge || !sessionData?.isActive) return;
   
   if (myVoteForCurrentSlot) {
-    showToast(t('alreadyVoted'), 'info');
+    // ป้องกัน Error กรณีตัวแปร t โหลดไม่ทัน
+    const msg = (typeof t === 'function') ? t('alreadyVoted') : 'คุณโหวตไปแล้ว';
+    if (typeof showToast === 'function') showToast(msg, 'info');
     return;
   }
 
-  // 2. เก็บค่าโหวตไว้ชั่วคราว
+  // เก็บค่าโหวตไว้ชั่วคราว
   pendingVoteType = choice;
 
-  // 3. เตรียมหน้าตา Popup
+  // เตรียมหน้าตา Popup
   const titleEl = document.getElementById('modal-vote-title');
   const confirmBtn = document.getElementById('btn-confirm-vote');
   
-  // ดึงภาษาปัจจุบัน
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'th';
 
+  // 🚨 [แก้ไขจุดที่ทำให้โค้ดพัง]: ใช้ typeof เพื่อเช็คว่ามีตัวแปร i18n อยู่จริงไหม
+  const hasI18n = (typeof i18n !== 'undefined' && i18n[lang]);
+
   if (choice === 'pass') {
-    // ใช้ fallback ภาษาไทยเผื่อไว้กรณีที่หา i18n ไม่เจอ
-    const txt = (i18n && i18n[lang] && i18n[lang].confirmPass) ? i18n[lang].confirmPass : 'ยืนยันการให้ผล "ผ่าน"';
-    titleEl.innerHTML = `🟢 ${txt}`;
-    confirmBtn.style.background = '#15803d'; // สีเขียว
+    const txt = (hasI18n && i18n[lang].confirmPass) 
+      ? i18n[lang].confirmPass 
+      : 'ยืนยันการให้ผล "ผ่าน"';
+    
+    if (titleEl) titleEl.innerHTML = `🟢 ${txt}`;
+    if (confirmBtn) confirmBtn.style.background = '#15803d';
   } else {
-    const txt = (i18n && i18n[lang] && i18n[lang].confirmFail) ? i18n[lang].confirmFail : 'ยืนยันการให้ผล "ไม่ผ่าน"';
-    titleEl.innerHTML = `🔴 ${txt}`;
-    confirmBtn.style.background = '#dc2626'; // สีแดง
+    const txt = (hasI18n && i18n[lang].confirmFail) 
+      ? i18n[lang].confirmFail 
+      : 'ยืนยันการให้ผล "ไม่ผ่าน"';
+      
+    if (titleEl) titleEl.innerHTML = `🔴 ${txt}`;
+    if (confirmBtn) confirmBtn.style.background = '#dc2626';
   }
 
-  // 4. เปิด Popup
-  document.getElementById('vote-confirm-modal').style.display = 'flex';
+  // เปิด Popup
+  const modal = document.getElementById('vote-confirm-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  } else {
+    console.error("❌ หา HTML id 'vote-confirm-modal' ไม่เจอครับ");
+  }
 }
 
-/* 2. CLOSE MODAL — ปิด Popup (กรณีกรรมการเปลี่ยนใจ/ยกเลิก) */
+/* 2. ปิด Popup เมื่อกดยกเลิก */
 function closeVoteModal() {
-  document.getElementById('vote-confirm-modal').style.display = 'none';
-  pendingVoteType = null; // ล้างค่าทิ้ง
+  const modal = document.getElementById('vote-confirm-modal');
+  if (modal) modal.style.display = 'none';
+  pendingVoteType = null; // เคลียร์ค่าที่เก็บไว้
 }
 
-/* 3. EXECUTE VOTE — ทำงานเมื่อกรรมการกดยืนยันใน Popup (โค้ด Firebase เดิมของคุณ) */
+/* 3. ยืนยันและส่งคะแนนขึ้น Firebase */
 async function executeVote() {
-  // ถ้าไม่มีค่าโหวตค้างไว้ ให้หยุดทำงาน
-  if (!pendingVoteType) return;
-  
+  // เช็คความชัวร์อีกรอบก่อนส่ง
+  if (!currentJudge || !sessionData?.isActive || !pendingVoteType) return;
+
   const choice = pendingVoteType;
-
-  // 1. ปิด Popup ทันทีที่กดยืนยัน
-  closeVoteModal();
-
-  // 2. เล่นเสียงประกอบการกด (ย้ายมาเล่นตอนกดยืนยันสำเร็จ)
-  if (typeof playVoteSound === 'function') playVoteSound();
-
   const { currentRoundIndex: ri, currentTeamIndex: ti } = sessionData;
   const slotKey = `${ri}_${ti}`;
-  
-  // ดึงชื่อทีมปัจจุบันมาใช้แสดงในข้อความแจ้งเตือน
+  const judgeIndex = currentJudge.index.toString();
   const teamName = settings.teams?.[ti] || '—';
 
-  try {
-    const voteRef = db.collection('votes').doc(slotKey);
+  // ปิด Popup
+  closeVoteModal();
 
-    // 3. 🚀 บันทึกคะแนนลง Firestore (ใช้ merge เพื่อรวมคะแนนกรรมการทุกคน)
-    await voteRef.set({
-      [currentJudge.index]: choice
+  try {
+    // บันทึกคะแนนลง Firestore
+    await db.collection('votes').doc(slotKey).set({
+      [judgeIndex]: choice,
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    // 4. อัปเดตสถานะในเครื่อง
+    // บันทึกในเครื่อง
     myVoteForCurrentSlot = choice;
 
-    // 5. แสดงข้อความแจ้งเตือนให้ตรงกับ i18n
-    const msg = choice === 'pass' 
-      ? t('youVotedPass', teamName) 
-      : t('youVotedFail', teamName);
+    // แสดงข้อความแจ้งเตือน (ป้องกัน Error กรณีตัวแปร t โหลดไม่ทัน)
+    let msg = '';
+    if (typeof t === 'function') {
+      msg = choice === 'pass' ? t('youVotedPass', teamName) : t('youVotedFail', teamName);
+    } else {
+      msg = choice === 'pass' ? `บันทึกผล "ผ่าน" สำเร็จ` : `บันทึกผล "ไม่ผ่าน" สำเร็จ`;
+    }
     
-    showToast(msg, choice);
+    if (typeof showToast === 'function') showToast(msg, choice === 'pass' ? 'success' : 'info');
 
-    // 6. ✅ อัปเดตหน้าจอทันทีเพื่อให้ปุ่มเปลี่ยนเป็นสีเทาหรือโชว์สถานะรอ
+    // อัปเดตหน้าจอ
     if (typeof updateJudgeScreen === 'function') updateJudgeScreen();
 
     console.log(`✅ Vote saved for ${currentJudge.name} on slot ${slotKey}`);
 
   } catch (error) {
-    console.error("❌ Cast Vote Error:", error);
-    showToast("Error saving vote. Please check connection.", "fail");
+    console.error("❌ Firestore Vote Error:", error);
+    if (typeof showToast === 'function') showToast("เกิดข้อผิดพลาด: " + error.message, "fail");
   }
 }
+
 
 /* LOAD MY VOTE — โหลด vote ของตัวเองสำหรับ slot ปัจจุบัน */
 async function loadMyVoteForCurrentSlot() {
@@ -1474,7 +1520,7 @@ function buildCharts(allVotes, fskVotesList = []) {
 let swipeSummaryPage = 1; // 1 = ตาราง My Votes, 2 = กราฟสรุปผลรวม
 let touchStartX = 0;
 
-// ฟังก์ชันนี้รับค่า 3 ตัว (allVotes, fskVotesList, audienceVotesData)
+// ฟังก์ชันนี้รับค่า 3 ตัวแล้วนะครับ (allVotes, fskVotesList, audienceVotesData)
 async function renderRoundWinners(allVotes, fskVotesList = [], audienceVotesData = {}) {
   const container = document.getElementById('winners-list');
   const grandContainer = document.getElementById('grand-champion-container');
