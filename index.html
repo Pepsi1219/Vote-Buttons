@@ -245,7 +245,7 @@
         <div class="charts-container">
 
           <div class="chart-card">
-          <h3 class="chart-title">🏆 THE WINNER ฺBOARD 🏆</h3>
+          <h3 class="chart-title">🏆 THE WINNER BOARD 🏆</h3>
           
           <div id="winners-list" class="winners-container"></div>
         
@@ -267,61 +267,82 @@
         </div>
         </div>
       </div>
+        </div>
 
 
-    <div id="vote-confirm-modal" class="custom-modal-overlay" style="display: none;">
-    <div class="custom-modal-box">
-      <h3 id="modal-vote-title" class="modal-title">ยืนยันผลการตัดสิน</h3>
+          <div id="vote-confirm-modal" class="custom-modal-overlay" style="display: none;">
+          <div class="custom-modal-box">
       
-      <p class="modal-subtitle" data-i18n="modalReview">กรุณาทบทวนเกณฑ์การประเมินดังต่อไปนี้:</p>
+          <!-- Header -->
+          <h3 id="modal-vote-title" class="modal-title">ยืนยันผลการตัดสิน</h3>
       
-      <ul class="checklist-box">
-        <li>
-          <span class="check-icon">✓</span>
-          <div class="checklist-item-content">
-            <b>Process:</b> <span data-i18n="chkProcess">Work process is correct</span>
-          </div>
-        </li>
-        
-        <li>
-          <span class="check-icon">✓</span>
-          <div class="checklist-item-content">
-            <b>Pic:</b> <span data-i18n="chkPic">The responsible person is clearly identified and correct</span>
-          </div>
-        </li>
-        
-        <li>
-          <span class="check-icon">✓</span>
-          <div class="checklist-item-content">
-            <b>Output:</b> <span data-i18n="chkOutput">The results of the steps are correct</span>
-          </div>
-        </li>
-        
-        <li>
-          <span class="check-icon">✓</span>
-          <div class="checklist-item-content">
-            <b>System:</b> <span data-i18n="chkSystem">System data entry is complete</span>
-          </div>
-        </li>
-      </ul>
+          <!-- Subtitle -->
+          <p class="modal-subtitle" data-i18n="modalReview">กรุณาทบทวนเกณฑ์การประเมินดังต่อไปนี้:</p>
+      
+          <!-- Checklist -->
+          <ul class="checklist-box">
+            <li>
+              <span class="check-icon">✓</span>
+              <div class="checklist-item-content">
+                <b>Process:</b> 
+                <span data-i18n="chkProcess">Work process is correct</span>
+              </div>
+            </li>
+      
+            <li>
+              <span class="check-icon">✓</span>
+              <div class="checklist-item-content">
+                <b>Pic:</b> 
+                <span data-i18n="chkPic">The responsible person is clearly identified and correct</span>
+              </div>
+            </li>
+      
+            <li>
+              <span class="check-icon">✓</span>
+              <div class="checklist-item-content">
+                <b>Output:</b> 
+                <span data-i18n="chkOutput">The results of the steps are correct</span>
+              </div>
+            </li>
+      
+            <li>
+              <span class="check-icon">✓</span>
+              <div class="checklist-item-content">
+                <b>System:</b> 
+                <span data-i18n="chkSystem">System data entry is complete</span>
+              </div>
+            </li>
 
-        <li>
-      <span class="check-icon">✓</span>
-      <div class="checklist-item-content">
-        <b>Leadtime:</b> <span data-i18n="chkLeadtime">The process duration complies with the standard</span>
+            <li>
+              <span class="check-icon">✓</span>
+              <div class="checklist-item-content">
+                <b>Leadtime:</b> 
+                <span data-i18n="chkLeadtime">The process duration complies with the standard</span>
+              </div>
+            </li>
+            
+          </ul>
+      
+          <!-- Warning Message -->
+          <div class="modal-warning">
+            ⚠️ <b data-i18n="note">หมายเหตุ:</b> 
+            <span data-i18n="modalWarningDesc">
+              ผู้รับการประเมินต้องปฏิบัติได้ถูกต้องครบถ้วนทั้ง 5 หัวข้อ จึงจะพิจารณาให้ผลเป็น <b>"ผ่าน"</b>
+            </span>
+          </div>
+      
+          <!-- Actions -->
+          <div class="modal-actions">
+            <button class="modal-btn btn-cancel" onclick="closeVoteModal()" data-i18n="cancelBtn">
+              ยกเลิก
+            </button>
+            <button id="btn-confirm-vote" class="modal-btn btn-confirm" onclick="executeVote()" data-i18n="confirmVoteBtn">
+              ยืนยันการโหวต
+            </button>
+          </div>
+      
+        </div>
       </div>
-    </li>
-  
-      <div class="modal-warning">
-        ⚠️ <b data-i18n="note">หมายเหตุ:</b> <span data-i18n="modalWarningDesc">ผู้รับการประเมินต้องปฏิบัติได้ถูกต้องครบถ้วนทั้ง 5 หัวข้อ จึงจะพิจารณาให้ผลเป็น <b>"ผ่าน"</b></span>
-      </div>
-  
-      <div class="modal-actions">
-        <button class="modal-btn btn-cancel" onclick="closeVoteModal()" data-i18n="cancelBtn">ยกเลิก</button>
-        <button id="btn-confirm-vote" class="modal-btn btn-confirm" onclick="executeVote()" data-i18n="confirmVoteBtn">ยืนยันการโหวต</button>
-      </div>
-    </div>
-  </div>
 
   <div id="toast" class="toast"></div>
 
