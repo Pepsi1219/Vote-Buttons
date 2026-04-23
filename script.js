@@ -237,9 +237,7 @@ async function playVoteSound() {
   }
 }
 
-/* =================================================================
-   🎵 ระบบเสียงเพลง BGM ระหว่างรอโหวต (HTML5 Audio)
-   ================================================================= */
+/* ระบบเสียงเพลงะหว่างรอโหวต (HTML5 Audio) */
 
 // โหลดไฟล์เสียง BGM จาก GitHub ของคุณ
 const waitingBgm = new Audio('https://raw.githubusercontent.com/Pepsi1219/Vote-Buttons/main/waiting-bgm.mp3'); 
@@ -1145,10 +1143,7 @@ function updateCountDisplay(containerId, countId, unit) {
   countEl.innerHTML = `${container.children.length} <span>${unit}</span>`;
 }
 
-/**
- * ดึงค่าจาก Input ทั้งหมดออกมาเป็น Array เพื่อเตรียมบันทึกลง Firestore
- * ปรับปรุง: กรองเอาเฉพาะค่าที่มีตัวอักษรจริงๆ (ไม่เอาช่องว่าง)
- */
+/* ดึงค่าจาก Input ทั้งหมดออกมาเป็น Array เพื่อเตรียมบันทึกลง Firestore */
 function getInputValues(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return [];
@@ -1314,55 +1309,75 @@ async function resetAll() {
   }
 }
 
-/* SUMMARY — หน้าสรุปผล */
-async function buildSummary() {
+/* SUMMARY — หน้าสรุปผล (Real-time) */
+
+let summaryAllVotes = {};
+let summaryFskVotesList = [];
+let summaryAudienceVotesData = {};
+let summaryListeners = [];
+
+function buildSummary() {
   if (!settings || !currentJudge) return;
 
   // 1. แสดงชื่อกรรมการที่หน้าสรุป
   const judgeNameEl = document.getElementById('summary-judge-name');
   if (judgeNameEl) judgeNameEl.textContent = currentJudge.name;
 
+  // 2. เคลียร์ Listener เก่าทิ้งก่อน ป้องกันการโหลดกราฟเบิ้ลเวลาเข้า-ออกหน้านี้หลายครั้ง
+  summaryListeners.forEach(unsub => unsub());
+  summaryListeners = [];
+
   try {
-    // 2. โหลด votes ทั้งหมดจาก Firestore
-    const snap = await db.collection('votes').get();
-    const allVotes = {};
-    snap.forEach(doc => {
-      allVotes[doc.id] = doc.data();
+    // 3. ฟังข้อมูล votes ทั้งหมดแบบ Real-time
+    const unsubVotes = db.collection('votes').onSnapshot(snap => {
+      summaryAllVotes = {};
+      snap.forEach(doc => {
+        summaryAllVotes[doc.id] = doc.data();
+      });
+      refreshSummaryUI(); // เรียกอัปเดตหน้าจอทันทีที่มีคนโหวต
     });
+    summaryListeners.push(unsubVotes);
 
-    // 🚀 โหลดข้อมูล fskVotes ทั้งหมดจาก Firestore
-    const fskSnap = await db.collection('fskVotes').get();
-    const fskVotesList = [];
-    fskSnap.forEach(doc => {
-      fskVotesList.push(doc.data());
+    // 4. 🚀 ฟังข้อมูล fskVotes แบบ Real-time
+    const unsubFsk = db.collection('fskVotes').onSnapshot(snap => {
+      summaryFskVotesList = [];
+      snap.forEach(doc => {
+        summaryFskVotesList.push(doc.data());
+      });
+      refreshSummaryUI();
     });
+    summaryListeners.push(unsubFsk);
 
-    // 🚀 [เพิ่มใหม่ตรงนี้!] โหลดข้อมูล Audience Votes ทั้งหมดจาก Firestore
-    const audienceSnap = await db.collection('audience_votes').get();
-    const audienceVotesData = {};
-    audienceSnap.forEach(doc => {
-      // ดึงยอดโหวต count มาเก็บไว้ โดยใช้ doc.id (เช่น "0", "1") เป็น key
-      audienceVotesData[doc.id] = doc.data().count || 0;
+    // 5. 🚀 ฟังข้อมูล Audience Votes แบบ Real-time
+    const unsubAudience = db.collection('audience_votes').onSnapshot(snap => {
+      summaryAudienceVotesData = {};
+      snap.forEach(doc => {
+        // ดึงยอดโหวต count มาเก็บไว้ โดยใช้ doc.id (เช่น "0", "1") เป็น key
+        summaryAudienceVotesData[doc.id] = doc.data().count || 0;
+      });
+      refreshSummaryUI();
     });
-
-    // 3. สร้างตารางผลโหวตเฉพาะของเราเอง
-    buildMyVotesTable(allVotes);
-    
-    // 4. สร้างกราฟสรุปผลรวม (ส่ง FSK เข้าไปแอบบวกด้วย)
-    buildCharts(allVotes, fskVotesList);
-
-    // 5. สร้างตารางผู้ชนะรายรอบ (ส่ง FSK เข้าไปแอบบวกด้วย)
-    renderRoundWinners(allVotes, fskVotesList, audienceVotesData);
-
-    // 🚀 [เพิ่มใหม่ตรงนี้!] เรียกฟังก์ชันวาดกราฟ Audience โชว์ลงในหน้าจอ
-    if (typeof renderAudienceSummary === 'function') {
-      renderAudienceSummary(audienceVotesData);
-    }
+    summaryListeners.push(unsubAudience);
 
   } catch (error) {
     console.error("❌ Error building summary:", error);
-    showToast("ไม่สามารถโหลดสรุปผลได้", "fail");
+    if (typeof showToast === 'function') showToast("ไม่สามารถโหลดสรุปผลได้", "fail");
   }
+}
+
+// 🚀 ฟังก์ชันตัวกลางสำหรับสั่งอัปเดต UI ทั้งหมด (ต้องมีไว้เพื่อรับข้อมูลจาก onSnapshot)
+function refreshSummaryUI() {
+  // สร้างตารางผลโหวตเฉพาะของเราเอง
+  if (typeof buildMyVotesTable === 'function') buildMyVotesTable(summaryAllVotes);
+  
+  // สร้างกราฟสรุปผลรวม (ส่ง FSK เข้าไปแอบบวกด้วย)
+  if (typeof buildCharts === 'function') buildCharts(summaryAllVotes, summaryFskVotesList);
+
+  // สร้างตารางผู้ชนะรายรอบ (ส่ง FSK เข้าไปแอบบวกด้วย)
+  if (typeof renderRoundWinners === 'function') renderRoundWinners(summaryAllVotes, summaryFskVotesList, summaryAudienceVotesData);
+
+  // เรียกฟังก์ชันวาดกราฟ Audience โชว์ลงในหน้าจอ
+  if (typeof renderAudienceSummary === 'function') renderAudienceSummary(summaryAudienceVotesData);
 }
 
 function buildMyVotesTable(allVotes) {
@@ -1417,12 +1432,13 @@ function buildCharts(allVotes, fskVotesList = []) {
   const teams  = settings.teams  || [];
   const rounds = settings.rounds || [];
 
-  // 🔥 จุดหลอมรวมคะแนน: Pass ปกติ + FSK (เหมือนเดิม)
+  // 🔥 จุดหลอมรวมคะแนน: Pass ปกติ + FSK
   const passData = teams.map((_, ti) => {
     let p = 0; 
     rounds.forEach((_, ri) => {
       const slot = allVotes[`${ri}_${ti}`] || {};
       Object.values(slot).forEach(v => { if (v === 'pass') p++; });
+      
       const fskSlotId = `r${ri}_t${ti}`;
       fskVotesList.forEach(fskDoc => {
         if (fskDoc.scores && fskDoc.scores[fskSlotId]) { p += fskDoc.scores[fskSlotId]; }
@@ -1431,11 +1447,11 @@ function buildCharts(allVotes, fskVotesList = []) {
     return p; 
   });
 
-  // 🚀 [เพิ่มใหม่] สร้าง Array ของสีพื้นหลังและสีขอบ สำหรับแต่ละทีม ---
-  const backgroundColors = teams.map((_, index) => getTeamColor(index));
-  const borderColors = teams.map((_, index) => getTeamColor(index, true));
+  // 🚀 สร้าง Array ของสีพื้นหลังและสีขอบ สำหรับแต่ละทีม
+  const backgroundColors = teams.map((_, index) => typeof getTeamColor === 'function' ? getTeamColor(index) : 'rgba(54, 162, 235, 0.7)');
+  const borderColors = teams.map((_, index) => typeof getTeamColor === 'function' ? getTeamColor(index, true) : 'rgba(54, 162, 235, 1)');
 
-  // (failData, totalPass, totalFail ยังคงไว้สำหรับ Pie Chart เหมือนเดิม)
+  // (failData, totalPass, totalFail สำหรับ Pie Chart)
   const failData = teams.map((_, ti) => {
     let f = 0;
     rounds.forEach((_, ri) => {
@@ -1447,72 +1463,81 @@ function buildCharts(allVotes, fskVotesList = []) {
   const totalPass = passData.reduce((a, b) => a + b, 0);
   const totalFail = failData.reduce((a, b) => a + b, 0);
 
-  // --- การวาด Bar Chart (ฉบับแยกสีทีม) ---
+  // --- การวาด Bar Chart (ฉบับ Real-time Smooth Update) ---
   const barCanvas = document.getElementById('bar-chart');
   if (barCanvas) { 
-    const barCtx = barCanvas.getContext('2d');
-    if (barChartInst) barChartInst.destroy();
-    barChartInst = new Chart(barCtx, {
-      type: 'bar',
-      data: {
-        labels: teams,
-        datasets: [
-          {
+    if (barChartInst) {
+      // ✅ ถ้ามีกราฟอยู่แล้ว ให้อัปเดตแค่ข้อมูล (กราฟจะขยับขึ้นลงเนียนๆ ไม่กระพริบ)
+      barChartInst.data.labels = teams;
+      barChartInst.data.datasets[0].data = passData;
+      barChartInst.data.datasets[0].backgroundColor = backgroundColors;
+      barChartInst.data.datasets[0].borderColor = borderColors;
+      barChartInst.update(); // สั่งให้อัปเดต UI
+    } else {
+      // ✅ สร้างกราฟใหม่เฉพาะตอนเปิดหน้าจอครั้งแรก
+      const barCtx = barCanvas.getContext('2d');
+      barChartInst = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: teams,
+          datasets: [{
             label: 'คะแนนรวม (Points)', 
             data: passData, 
-            // 🚀 เปลี่ยนจากสีเดียว เป็น Array ของสีที่เราสร้างไว้ด้านบน
             backgroundColor: backgroundColors, 
             borderColor: borderColors,
             borderWidth: 2,
             borderRadius: 6,
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { 
-          legend: { 
-            display: false, // ซ่อน label
-            labels: { color: '#94a3b8', font: { family: "'Noto Sans Thai', sans-serif" } } 
-          } 
+          }]
         },
-        scales: {
-          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { 
+            legend: { display: false } 
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+          }
         }
-      }
-    });
+      });
+    }
   }
 
-  // --- การวาด Pie Chart (เหมือนเดิม 100%) ---
+  // --- การวาด Pie Chart (ฉบับ Real-time Smooth Update) ---
   const pieCanvas = document.getElementById('pie-chart');
   if (pieCanvas) {
-    const pieCtx = pieCanvas.getContext('2d');
-    if (pieChartInst) pieChartInst.destroy();
-    pieChartInst = new Chart(pieCtx, {
-      type: 'doughnut',
-      data: {
-        labels: [t('pass'), t('fail')],
-        datasets: [{
-          data: [totalPass, totalFail],
-          backgroundColor: ['rgba(16,185,129,0.8)', 'rgba(239,68,68,0.8)'],
-          borderColor: ['#10b981', '#ef4444'],
-          borderWidth: 2,
-          hoverOffset: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: '#94a3b8', font: { family: "'Noto Sans Thai', sans-serif" }, padding: 16 },
-            position: 'bottom'
+    if (pieChartInst) {
+      // ✅ ถ้ามีกราฟอยู่แล้ว ให้อัปเดตแค่ข้อมูล
+      pieChartInst.data.datasets[0].data = [totalPass, totalFail];
+      pieChartInst.update();
+    } else {
+      // ✅ สร้างกราฟใหม่ครั้งแรก
+      const pieCtx = pieCanvas.getContext('2d');
+      pieChartInst = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: [(typeof t === 'function' ? t('pass') : 'ผ่าน'), (typeof t === 'function' ? t('fail') : 'ไม่ผ่าน')],
+          datasets: [{
+            data: [totalPass, totalFail],
+            backgroundColor: ['rgba(16,185,129,0.8)', 'rgba(239,68,68,0.8)'],
+            borderColor: ['#10b981', '#ef4444'],
+            borderWidth: 2,
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#94a3b8', font: { family: "'Noto Sans Thai', sans-serif" }, padding: 16 },
+              position: 'bottom'
+            }
           }
         }
-      }
-    });
+      });
+    }
   }
 }
 
