@@ -108,7 +108,7 @@ const i18n = {
     chkLeadtime: "ระยะเวลาของแต่ละกระบวนการถูกต้อง",
     chkSystem: "ระบบถูกใช้งานอย่างถูกต้องในทุกขั้นตอนของกระบวนการ",
     note: "หมายเหตุ:",
-    modalWarningDesc: 'ผู้รับการประเมินต้องปฏิบัติได้ถูกต้องครบถ้วนทั้ง 4 หัวข้อ จึงจะพิจารณาให้ผลเป็น "ผ่าน"',
+    modalWarningDesc: 'ผู้รับการประเมินต้องปฏิบัติได้ถูกต้องครบถ้วนทั้ง 5 หัวข้อ จึงจะพิจารณาให้ผลเป็น "ผ่าน"',
     cancelBtn: "ยกเลิก",
     confirmVoteBtn: "ยืนยันการโหวต"
   },
@@ -175,7 +175,7 @@ const i18n = {
     chkSystem: "The system is used correctly at each step of the process",
     chkLeadtime: "The process duration complies with the standard",
     note: "Note:",
-    modalWarningDesc: 'The evaluatee must meet all 4 criteria correctly to be considered as "Pass"',
+    modalWarningDesc: 'The evaluatee must meet all 5 criteria correctly to be considered as "Pass"',
     cancelBtn: "Cancel",
     confirmVoteBtn: "Confirm Vote"
   }
@@ -1269,7 +1269,6 @@ async function resetAll() {
 }
 
 /* SUMMARY — หน้าสรุปผล */
-/* SUMMARY — หน้าสรุปผล */
 async function buildSummary() {
   if (!settings || !currentJudge) return;
 
@@ -1351,10 +1350,7 @@ function buildMyVotesTable(allVotes) {
 }
 
 // 🚀 ฟังก์ชันช่วยสร้างสีแบบสุ่มหรือกำหนดชุดสี (Palettes)
-// พงศธรสามารถกำหนดสไตล์สีที่ชอบได้ที่นี่ครับ
 function getTeamColor(index, isBorder = false) {
-  // 🎨 ตัวอย่างชุดสีแบบ Bright/Modern (เรียงตามลำดับทีม 1, 2, 3...)
-  // ทีมที่ 1: ฟ้า, ทีมที่ 2: เขียว, ทีมที่ 3: ส้ม, ทีมที่ 4: แดง, ทีมที่ 5: ม่วง, ทีมที่ 6: เหลือง
   const colors = [
     { bg: 'rgba(54, 162, 235, 0.7)',  border: 'rgba(54, 162, 235, 1)' },   // Blue
     { bg: 'rgba(75, 192, 192, 0.7)',  border: 'rgba(75, 192, 192, 1)' },   // Teal
@@ -1478,8 +1474,7 @@ function buildCharts(allVotes, fskVotesList = []) {
 let swipeSummaryPage = 1; // 1 = ตาราง My Votes, 2 = กราฟสรุปผลรวม
 let touchStartX = 0;
 
-// --- วางไว้ต่อท้าย buildCharts ได้เลย ---
-// 🚀 อย่าลืมว่าฟังก์ชันนี้รับค่า 3 ตัวแล้วนะครับ (allVotes, fskVotesList, audienceVotesData)
+// ฟังก์ชันนี้รับค่า 3 ตัว (allVotes, fskVotesList, audienceVotesData)
 async function renderRoundWinners(allVotes, fskVotesList = [], audienceVotesData = {}) {
   const container = document.getElementById('winners-list');
   const grandContainer = document.getElementById('grand-champion-container');
@@ -1493,9 +1488,7 @@ async function renderRoundWinners(allVotes, fskVotesList = [], audienceVotesData
   const totalScores = {};
   settings.teams.forEach(team => totalScores[team] = 0);
 
-  // ==========================================
-  // --- ส่วนที่ 1: วาดผู้ชนะรายรอบ (กรรมการ + FSK) ---
-  // ==========================================
+  // ส่วนที่ 1: วาดผู้ชนะรายรอบ (กรรมการ + FSK) 
   settings.rounds.forEach((roundName, ri) => {
     let topScore = -1;
     let winners = [];
@@ -1527,7 +1520,7 @@ async function renderRoundWinners(allVotes, fskVotesList = [], audienceVotesData
       }
     });
 
-    // วาดกล่องผู้ชนะของรอบนั้น
+    // วาดกล่องผู้ชนะของรอบนั้น <div class="winner-score">${topScore > 0 ? topScore : 0} Pts</div> ซ๋อนป้ายคะแนนไว้
     const row = document.createElement('div');
     row.className = 'winner-row';
     const winnerDisplay = (topScore > 0) ? `🥇 ${winners.join(' | ')}` : '-';
@@ -1536,14 +1529,12 @@ async function renderRoundWinners(allVotes, fskVotesList = [], audienceVotesData
         <small>${ri + 1}. ${roundName.toUpperCase()}</small>
         <div class="winner-name">${winnerDisplay}</div>
       </div>
-      <div class="winner-score">${topScore > 0 ? topScore : 0} Pts</div> 
+      
     `;
     container.appendChild(row);
   });
 
-  // ==========================================
-  // --- ส่วนที่ 2: รางวัล Presentation & Creative (จาก Audience Vote) ---
-  // ==========================================
+  // ส่วนที่ 2: รางวัล Presentation & Creative (จาก Audience Vote) 
   let maxAudienceVotes = -1;
   let popularChampions = [];
 
