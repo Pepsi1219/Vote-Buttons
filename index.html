@@ -178,6 +178,9 @@
           <button id="btn-reset" class="reset-btn secondary" onclick="resetAll()">
             <span data-i18n="resetAll">Reset ทั้งหมด</span>
           </button>
+          <button id="btn-toggle-chart" class="reset-btn secondary" onclick="toggleChartVisibility()" style="margin-top: 10px;">
+            📊 เปิดปุ่มดูกราฟ
+          </button>
         </div>
       </div>
 
@@ -233,7 +236,9 @@
           <button id="btn-home" class="icon-btn" onclick="goHome()"><span>🏠</span>
   <span data-i18n="homeText">กลับหน้าแรก</span>
 </button>
-          <button class="swipe-btn" onclick="goToPage(2)" data-i18n="viewChart">ดูกราฟ →</button>
+          <button id="btn-go-to-chart" class="swipe-btn" onclick="goToPage(2)" data-i18n="viewChart" style="display: none;">
+    ดูกราฟ →
+  </button>
         </div>
       </div>
 
