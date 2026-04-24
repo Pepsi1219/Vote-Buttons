@@ -402,6 +402,14 @@ function handleSessionChange() {
   // 2. ถ้าข้อมูลพื้นฐานยังไม่มา ให้รอ (แต่ไม่ต้องดีดกลับหน้าแรกแล้วเพราะมีชื่อแล้ว)
   if (!settings || !sessionData) return;
 
+
+  // เช็คปุ่มดูกราฟตรงนี้เลย! (ก่อนที่โค้ดจะถูกสั่ง return หนีไป) //
+  const btnChart = document.getElementById('btn-go-to-chart');
+  if (btnChart) {
+    const isChartVisible = sessionData?.showChartButton || false;
+    btnChart.style.display = isChartVisible ? 'inline-block' : 'none';
+  }
+
   // 3. ถ้าจบการประเมินแล้ว -> ไปหน้าสรุป
   if (sessionData.isCompleted) {
     if (getActiveScreen() !== 'screen-summary') {
@@ -1026,6 +1034,27 @@ function openAdmin() {
   */
 }
 
+/* ควบคุมการแสดงปุ่มดูกราฟ */
+async function toggleChartVisibility() {
+  if (!sessionData) return;
+  
+  // เช็คสถานะปัจจุบัน (ถ้าไม่มีค่า ให้ถือว่าปิดอยู่ false)
+  const isCurrentlyVisible = sessionData.showChartButton || false;
+  
+  try {
+    // สลับค่า (ถ้าปิดอยู่ให้เปิด ถ้าเปิดอยู่ให้ปิด)
+    await db.collection('config').doc('session').set({
+      showChartButton: !isCurrentlyVisible
+    }, { merge: true });
+    
+    showToast(!isCurrentlyVisible ? "เปิดปุ่มดูกราฟให้ทุกคนแล้ว" : "ซ่อนปุ่มดูกราฟแล้ว", "info");
+    
+  } catch (error) {
+    console.error("Error toggling chart:", error);
+    showToast("เกิดข้อผิดพลาดในการเปลี่ยนตั้งค่า", "fail");
+  }
+}
+
 function closeAdmin() {
   if (currentJudge) {
     showScreen('screen-judge');
@@ -1257,6 +1286,16 @@ function updateAdminStatus() {
     const teamName  = settings.teams?.[ti]  || '—';
     
     info.textContent = `${roundName} · ${teamName}`;
+    
+    const btnToggleChart = document.getElementById('btn-toggle-chart');
+  if (btnToggleChart) {
+    const isChartVisible = sessionData?.showChartButton || false;
+    // เปลี่ยนข้อความบนปุ่มแอดมินตามสถานะปัจจุบัน
+    btnToggleChart.textContent = isChartVisible ? '📊 ปิดปุ่มดูกราฟ' : '📊 เปิดปุ่มดูกราฟ';
+    // เปลี่ยนสีปุ่มให้รู้ว่าเปิดอยู่
+    btnToggleChart.style.background = isChartVisible ? '#10b981' : ''; 
+    btnToggleChart.style.color = isChartVisible ? '#fff' : '';
+  }
   }
 }
 
