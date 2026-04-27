@@ -110,7 +110,20 @@ const i18n = {
     note: "หมายเหตุ:",
     modalWarningDesc: 'ผู้รับการประเมินต้องปฏิบัติได้ถูกต้องครบถ้วนทั้ง 5 หัวข้อ จึงจะพิจารณาให้ผลเป็น "ผ่าน"',
     cancelBtn: "ยกเลิก",
-    confirmVoteBtn: "ยืนยันการโหวต"
+    confirmVoteBtn: "ยืนยันการโหวต",
+    showChartBtn: "📊 เปิดปุ่มดูกราฟ",
+    hideChartBtn: "📊 ปิดปุ่มดูกราฟ",
+    muteMusicBtn: "🔊 ปิดระบบเพลง (Mute)",
+    unmuteMusicBtn: "🔇 เปิดระบบเพลง",
+    chartShownMsg: "เปิดปุ่มดูกราฟให้ทุกคนแล้ว",
+    chartHiddenMsg: "ซ่อนปุ่มดูกราฟแล้ว",
+    musicMutedMsg: "🔇 ปิดระบบเพลง BGM แล้ว",
+    musicUnmutedMsg: "🔊 เปิดระบบเพลง BGM ให้ทุกคนแล้ว",
+    fskTitle: "กรรมการพิเศษ (FSK)",
+    fskSelectName: "กรุณาเลือกชื่อของท่าน",
+    fskLoadingSelect: "-- เลื่อนเพื่อเลือกชื่อ --",
+    fskEnterBtn: "เข้าสู่หน้าประเมิน",
+    fskSubmitBtn: "ยืนยันการให้คะแนน (FSK)",
   },
   en: {
     appTitle:       "Shopfloor Best Practice Competition",
@@ -124,7 +137,7 @@ const i18n = {
     inactive:       "Inactive",
     active:         "Active",
     activateRound:  "🚀 Activate Current Round",
-    resetAll:       "🔄 Reset Everything",
+    resetAll:       "🔄 Reset All",
     judges:         "Judges",
     addJudge:       "Add Judge",
     persons:        "judges",
@@ -177,7 +190,20 @@ const i18n = {
     note: "Note:",
     modalWarningDesc: 'The evaluatee must meet all 5 criteria correctly to be considered as "Pass"',
     cancelBtn: "Cancel",
-    confirmVoteBtn: "Confirm Vote"
+    confirmVoteBtn: "Confirm Vote",
+    showChartBtn: "📊 Show Chart Button",
+    hideChartBtn: "📊 Hide Chart Button",
+    muteMusicBtn: "🔊 Mute BGM",
+    unmuteMusicBtn: "🔇 Unmute BGM",
+    chartShownMsg: "Chart button is now visible.",
+    chartHiddenMsg: "Chart button is hidden.",
+    musicMutedMsg: "🔇 BGM has been muted.",
+    musicUnmutedMsg: "🔊 BGM unmuted for everyone.",
+    fskTitle: "Special Judge (FSK)",
+    fskSelectName: "Please select your name",
+    fskLoadingSelect: "-- Scroll to select name --",
+    fskEnterBtn: "Enter Evaluation",
+    fskSubmitBtn: "Confirm Scores (FSK)",
   }
 };
 
@@ -199,7 +225,6 @@ async function playVoteSound() {
     const now = audioCtx.currentTime;
 
     // --- ส่วนที่ 1: เสียงเบส (Deep Impact) ---
-    // สร้างเสียงทุ้มต่ำเพื่อความหนักแน่นแบบในหนัง
     const bassGain = audioCtx.createGain();
     const bassOsc = audioCtx.createOscillator();
     
@@ -213,7 +238,6 @@ async function playVoteSound() {
     bassOsc.connect(bassGain);
 
     // --- ส่วนที่ 2: เสียงกระทบ (High Click) ---
-    // สร้างเสียง "กริ๊ก" เพื่อให้ดูเหมือนการกดปุ่มจริงๆ
     const clickGain = audioCtx.createGain();
     const clickOsc = audioCtx.createOscillator();
     
@@ -239,14 +263,19 @@ async function playVoteSound() {
 
 /* ระบบเสียงเพลงะหว่างรอโหวต (HTML5 Audio) */
 
-// โหลดไฟล์เสียง BGM จาก GitHub ของคุณ
+// โหลดไฟล์เสียง BGM จาก GitHub
 const waitingBgm = new Audio('https://raw.githubusercontent.com/Pepsi1219/Vote-Buttons/main/waiting-bgm.mp3'); 
 waitingBgm.loop = true; // เล่นวนลูป
-waitingBgm.volume = 0.4; // ปรับความดังลดลงเหลือ 40% จะได้ไม่กลบเสียงตอนกดปุ่ม
+waitingBgm.volume = 0.4; // ความดัง
 
 // ฟังก์ชันสั่งเล่นเสียง
 function playWaitingBgm() {
-  if (waitingBgm.paused) {
+  // 📌 ดึงสถานะการเปิด/ปิดเพลงจากคำสั่ง Admin ในฐานข้อมูล
+  // (ถ้าแอดมินยังไม่เคยตั้งค่า ให้ถือว่าเปิดอยู่เป็นค่าเริ่มต้น)
+  const isMusicEnabled = sessionData?.musicEnabled !== false;
+  
+  // ถ้าแอดมินเปิดสวิตช์อยู่ และเพลงยังหยุดอยู่ ถึงจะยอมให้เล่น
+  if (isMusicEnabled && waitingBgm.paused) {
     waitingBgm.play().catch(err => console.log("รอการคลิกจากผู้ใช้ก่อนเล่นเสียง", err));
   }
 }
@@ -256,6 +285,22 @@ function stopWaitingBgm() {
   if (!waitingBgm.paused) {
     waitingBgm.pause();
     waitingBgm.currentTime = 0; // กรอเพลงกลับไปวินาทีที่ 0
+  }
+}
+
+// ฟังก์ชันสลับเปิด/ปิดเสียง
+function toggleMusic() {
+  isMusicEnabled = !isMusicEnabled; // สลับสถานะ (true -> false -> true)
+  
+  if (!isMusicEnabled) {
+    stopWaitingBgm(); // ถ้าสวิตช์ปิด ให้หยุดเพลงทันที
+    if (typeof showToast === 'function') showToast("🔇 ปิดเพลง BGM แล้ว", "info");
+  } else {
+    // ถ้าสวิตช์เปิด ให้ลองเช็คว่าตอนนี้แอดมินเปิดรอบอยู่ไหม ถ้าเปิดอยู่ให้เพลงดังเลย
+    if (sessionData && sessionData.isActive && !myVoteForCurrentSlot) {
+       playWaitingBgm();
+    }
+    if (typeof showToast === 'function') showToast("🔊 เปิดเพลง BGM แล้ว", "info");
   }
 }
 
@@ -408,6 +453,11 @@ function handleSessionChange() {
   if (btnChart) {
     const isChartVisible = sessionData?.showChartButton || false;
     btnChart.style.display = isChartVisible ? 'inline-block' : 'none';
+  }
+
+  const isMusicEnabled = sessionData?.musicEnabled !== false;
+  if (!isMusicEnabled && typeof stopWaitingBgm === 'function') {
+    stopWaitingBgm();
   }
 
   // 3. ถ้าจบการประเมินแล้ว -> ไปหน้าสรุป
@@ -1047,10 +1097,35 @@ async function toggleChartVisibility() {
       showChartButton: !isCurrentlyVisible
     }, { merge: true });
     
-    showToast(!isCurrentlyVisible ? "เปิดปุ่มดูกราฟให้ทุกคนแล้ว" : "ซ่อนปุ่มดูกราฟแล้ว", "info");
+    // 📌 ใช้คำสั่ง t() ดึงคำแปลมาใช้แสดงผล Toast
+    const msg = !isCurrentlyVisible ? t('chartShownMsg') : t('chartHiddenMsg');
+    showToast(msg, "info");
     
   } catch (error) {
     console.error("Error toggling chart:", error);
+    showToast("เกิดข้อผิดพลาดในการเปลี่ยนตั้งค่า", "fail");
+  }
+}
+
+/* ควบคุมการเปิด/ปิดเสียง BGM  */
+async function toggleGlobalMusic() {
+  if (!sessionData) return;
+  
+  // เช็คสถานะปัจจุบัน (ถ้าแอดมินยังไม่เคยตั้งค่า ให้ถือว่า "เปิดอยู่" เป็นค่าเริ่มต้น)
+  const isMusicEnabled = sessionData.musicEnabled !== false; 
+  
+  try {
+    // สลับค่าแล้วส่งขึ้น Firebase
+    await db.collection('config').doc('session').set({
+      musicEnabled: !isMusicEnabled
+    }, { merge: true });
+    
+    // 📌 ใช้คำสั่ง t() ดึงคำแปลมาใช้แสดงผล Toast
+    const msg = !isMusicEnabled ? t('musicUnmutedMsg') : t('musicMutedMsg');
+    showToast(msg, "info");
+    
+  } catch (error) {
+    console.error("Error toggling music:", error);
     showToast("เกิดข้อผิดพลาดในการเปลี่ยนตั้งค่า", "fail");
   }
 }
@@ -1286,16 +1361,26 @@ function updateAdminStatus() {
     const teamName  = settings.teams?.[ti]  || '—';
     
     info.textContent = `${roundName} · ${teamName}`;
-    
-    const btnToggleChart = document.getElementById('btn-toggle-chart');
+  }
+
+  // ปุ่มเปิด/ปิดกราฟ
+  const btnToggleChart = document.getElementById('btn-toggle-chart');
   if (btnToggleChart) {
     const isChartVisible = sessionData?.showChartButton || false;
-    // เปลี่ยนข้อความบนปุ่มแอดมินตามสถานะปัจจุบัน
-    btnToggleChart.textContent = isChartVisible ? '📊 ปิดปุ่มดูกราฟ' : '📊 เปิดปุ่มดูกราฟ';
-    // เปลี่ยนสีปุ่มให้รู้ว่าเปิดอยู่
+    // ใช้คำสั่ง t() ดึงภาษาที่เลือกอยู่มาแสดง
+    btnToggleChart.textContent = isChartVisible ? t('hideChartBtn') : t('showChartBtn');
     btnToggleChart.style.background = isChartVisible ? '#10b981' : ''; 
     btnToggleChart.style.color = isChartVisible ? '#fff' : '';
   }
+
+  // ปุ่มเปิด/ปิดเสียงเพลง
+  const btnToggleMusic = document.getElementById('btn-toggle-music');
+  if (btnToggleMusic) {
+    const isMusicEnabled = sessionData?.musicEnabled !== false; 
+    // ใช้คำสั่ง t() ดึงภาษาที่เลือกอยู่มาแสดง
+    btnToggleMusic.innerHTML = isMusicEnabled ? t('muteMusicBtn') : t('unmuteMusicBtn');
+    btnToggleMusic.style.background = isMusicEnabled ? '#10b981' : ''; 
+    btnToggleMusic.style.color = isMusicEnabled ? '#fff' : '';
   }
 }
 
@@ -2018,7 +2103,7 @@ function openFskScreen() {
   
   // สร้าง Dropdown รายชื่อกรรมการ
   const select = document.getElementById('fsk-judge-select');
-  select.innerHTML = '<option value="">-- เลื่อนเพื่อเลือกชื่อ --</option>';
+  select.innerHTML = `<option value="">${t('fskLoadingSelect')}</option>`;
   
   // ดึงจาก settings.fskJudges ได้ ถ้ามีการตั้งค่าไว้ในระบบ
   const judges = (settings && settings.fskJudges) ? settings.fskJudges : fskJudgeList;
@@ -2130,7 +2215,7 @@ function loadFskData() {
   // เพิ่มปุ่มกดยืนยันส่งข้อมูลด้านล่างสุด
   html += `
     <button class="fsk-submit-btn" onclick="submitFskToFirebase()">
-      ยืนยันการให้คะแนน (FSK)
+      ${t('fskSubmitBtn')}
     </button>
   `;
 
