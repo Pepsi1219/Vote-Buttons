@@ -660,9 +660,7 @@ body.light-mode .logo-icon:hover {
 .toast.fail  { background: rgba(239,68,68,0.15); border-color: var(--clr-fail); color: var(--clr-fail); }
 .toast.info  { background: rgba(59,130,246,0.15); border-color: var(--clr-accent); color: #93c5fd; }
 
-/* ============================================================
-   ADMIN SCREEN
-   ============================================================ */
+/* ADMIN SCREEN */
 #screen-admin {
   background: var(--clr-bg);
 }
@@ -757,69 +755,90 @@ body.light-mode .logo-icon:hover {
   line-height: 1.6;
 }
 
-/* Container สำหรับจัดวางปุ่ม */
+/* =================================================================
+   🎛️ ACTION BUTTONS (ปรับโฉมใหม่เป็น Grid Layout)
+   ================================================================= */
 .admin-actions {
-  display: flex;
-  flex-wrap: wrap;       /* ให้ปุ่มลงมาซ้อนกันได้เมื่อพื้นที่ไม่พอ */
-  gap: 16px;             /* ระยะห่างระหว่างปุ่มทั้งแนวตั้งและแนวนอน */
-  margin-top: 24px;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* แบ่งเป็น 2 คอลัมน์เท่าๆ กัน */
+  gap: 12px;
+  margin-top: 20px;
+  width: 100%;
 }
 
-/* ปรับแต่งปุ่มพื้นฐาน (Shared Styles) */
-.activate-btn, .reset-btn {
-  flex: 1 1 200px;       /* ยืดเต็มที่แต่ไม่น้อยกว่า 200px */
+/* ตั้งค่าให้ปุ่มทุกอันทำงานร่วมกับ Grid ได้ดี */
+.admin-actions button {
+  width: 100%;
+  min-height: 48px;
   border-radius: var(--radius-md);
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
-  white-space: nowrap;    /* กันตัวหนังสือตัดบรรทัด */
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: var(--transition);
+  border: none;
+  white-space: nowrap;
 }
 
-/* ปุ่มหลัก: เปิดรอบปัจจุบัน */
+/* 🚀 ปุ่มหลัก: เปิดรอบปัจจุบัน (กางเต็ม 2 คอลัมน์) */
 .activate-btn {
+  grid-column: span 2;
   background: linear-gradient(135deg, var(--clr-accent), #1d4ed8);
   color: #fff;
-  padding: 14px 24px;
-  font-size: 1rem;
-  font-weight: 700;
-  border: none;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
   transition: var(--transition-bounce);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
 .activate-btn:hover { 
   transform: translateY(-2px); 
-  box-shadow: 0 8px 24px rgba(59,130,246,0.4); 
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); 
 }
 
 .activate-btn:active { 
   transform: scale(0.97); 
 }
 
-/* ปุ่มรอง: Reset ทั้งหมด (ทำให้ดูเล็กลงและไม่เด่นเท่า) */
+/* ⚙️ ปุ่มรอง: ดูกราฟ & ปิดเพลง (ดีไซน์เรียบหรู) */
+.secondary-btn, #btn-toggle-chart, #btn-toggle-music {
+  background: var(--clr-surface2);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text);
+  padding: 12px;
+}
+
+.secondary-btn:hover, #btn-toggle-chart:hover, #btn-toggle-music:hover {
+  background: var(--clr-surface);
+  border-color: var(--clr-accent);
+}
+
+/* 🛑 ปุ่มอันตราย: Reset ทั้งหมด (กางเต็ม 2 คอลัมน์ ไว้ล่างสุด) */
 .reset-btn {
-  background: transparent;
-  border: 1.5px solid var(--clr-fail);
+  grid-column: span 2;
+  background: var(--clr-surface2);
+  border: 1px dashed var(--clr-fail);
   color: var(--clr-fail);
-  padding: 10px 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: var(--transition);
-  /* บนหน้าจอใหญ่ (Desktop) จะไม่ยอมให้ปุ่ม Reset ขยายใหญ่เท่าปุ่มหลัก */
-  max-width: fit-content; 
+  padding: 14px;
+  margin-top: 8px; /* เว้นระยะห่างจากกลุ่มปุ่มด้านบนนิดหน่อย */
 }
 
 .reset-btn:hover { 
-  background: rgba(239,68,68,0.1); 
+  background: rgba(239, 68, 68, 0.1); 
+  border-style: solid; /* เปลี่ยนจากเส้นปะเป็นเส้นทึบเวลาเอาเมาส์ชี้ */
 }
 
-/* Media Query สำหรับมือถือ (หน้าจอเล็กมาก) */
-@media (max-width: 480px) {
-  .reset-btn {
-    max-width: 100%; /* บนมือถือให้ขยายเต็มความกว้างเหมือนปุ่มหลัก */
-    flex: 1 1 100%;
+/* 📱 Media Query สำหรับหน้าจอมือถือเล็กๆ */
+@media (max-width: 400px) {
+  .admin-actions {
+    grid-template-columns: 1fr; /* ยุบเหลือ 1 คอลัมน์ เรียงลงมาเป็นแถวเดียว */
+  }
+  
+  .activate-btn, .reset-btn {
+    grid-column: span 1; /* ปลดการกินพื้นที่ 2 คอลัมน์ออก */
   }
 }
 
@@ -1271,7 +1290,7 @@ body.light-mode #btn-theme-toggle {
   min-width: 35px;
   max-width: 35px;
   top: 8px;
-  right: 160px;
+  right: 110px;
   z-index: 9999;
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
@@ -1339,7 +1358,7 @@ body.dark-mode .floating-theme-btn {
   min-width: 35px;
   max-width: 35px;
   top: 8px;
-  right: 110px;
+  right: 160px;
   z-index: 9999;
   border-radius: 50%;
   background: var(--clr-surface, #ffffff);
