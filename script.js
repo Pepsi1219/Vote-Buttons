@@ -1052,13 +1052,13 @@ function restoreSession() {
 /* ADMIN — เปิด/ปิด Admin Panel */
 function openAdmin() {
   // 🔓 ปิดการตรวจสอบรหัสผ่านชั่วคราว
-  /*
+  
   // 1. ถามรหัสผ่านก่อนเข้าถึงหน้า Admin
   const password = prompt("กรุณากรอกรหัสผ่านผู้ดูแลระบบ (Admin Password):");
 
   // 2. ตรวจสอบรหัสผ่าน
   if (password === "Admin1219") {
-  */
+  
     
     // ✅ ถ้ารหัสถูกต้อง ให้รัน Logic เดิมทั้งหมด
     showScreen('screen-admin');
@@ -1075,13 +1075,13 @@ function openAdmin() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     console.log("🔐 Admin Access Granted");
-  /*
+  
   } 
   else if (password !== null) {
     // ❌ ถ้ารหัสผิด (และไม่ได้กด Cancel) ให้แจ้งเตือน
     alert("❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
   }
-  */
+  
 }
 
 /* ควบคุมการแสดงปุ่มดูกราฟ */
