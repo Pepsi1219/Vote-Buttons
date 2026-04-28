@@ -1047,21 +1047,21 @@ body.light-mode .logo-icon:hover {
 }
 .swipe-btn {
   /* 🎨 ใช้ตัวแปรสีจากระบบเดิมที่คุณตั้งไว้ */
-  background-color: var(--clr-surface2); /* สีพื้นหลังจะเปลี่ยนตามโหมด */
-  color: var(--clr-text);               /* สีตัวหนังสือและลูกศรเปลี่ยนตามโหมด */
-  border: 1px solid var(--clr-border);  /* สีขอบเปลี่ยนตามโหมด */
-  
+  background-color: var(--clr-surface2);
+  color: var(--clr-text);
+  border: 1px solid var(--clr-border);
   padding: 10px 20px;
   border-radius: var(--radius-md);
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  
   display: flex;
   align-items: center;
   gap: 8px;
   transition: var(--transition-bounce);
   box-shadow: var(--shadow-card);
+  margin-left: auto;
+  
 }
 
 /* เอฟเฟกต์ตอน Hover */
